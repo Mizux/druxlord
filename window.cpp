@@ -12,6 +12,8 @@
 #include <QMenu>
 #include <QProgressBar>
 #include <QPushButton>
+#include <QKeySequence>
+#include <QShortcut>
 #include <QSlider>
 #include <QSpinBox>
 #include <QStyle>
@@ -345,6 +347,9 @@ void create_window_main() {
   vbox_status->addLayout(box_money_status);
 
   vbox_right->addWidget(frame_status);
+
+  window_main.shortcut_quit = new QShortcut(QKeySequence::Quit, window_main.window);
+  QObject::connect(window_main.shortcut_quit, &QShortcut::activated, window_main.window, &QWidget::close);
 
   window_main.window->layout()->setSizeConstraint(QLayout::SetFixedSize);
 }

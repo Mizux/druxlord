@@ -12,6 +12,8 @@
 #include <QSpinBox>
 #include <QSlider>
 #include <QMenu>
+#include <QShortcut>
+#include <QKeySequence>
 
 struct WindowMain {
   QWidget *window = nullptr;
@@ -39,6 +41,7 @@ struct WindowMain {
   QLabel *label_debt = nullptr;
   QProgressBar *progressbar_health = nullptr;
   QWidget *drawingarea_status = nullptr;
+  QShortcut *shortcut_quit = nullptr;
 };
 
 struct WindowFinance {
