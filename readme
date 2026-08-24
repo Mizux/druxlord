@@ -12,8 +12,7 @@ and improve anything that looks cool to me.
 Build
 =====
 
-Consult your distribution for GTK+ 2 development library, GNU C compiler and GNU Make.
-No autotools and configuration script.
+Consult your distribution for GTK+ development library, C compiler and CMake.
 
 
 License
