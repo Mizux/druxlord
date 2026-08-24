@@ -72,33 +72,33 @@ const std::array<const char*, COUNTRY_NUM> country_name = {
 };
 
 const std::array<Weapon, WEAPON_NUM> weapon_info = {{
-  { WEAPON_KNIFE,           0,                     20, false, false, 100    },
-  { WEAPON_PISTOL,          AMMO_PISTOLBULLET,     40, false, true,  500    },
-  { WEAPON_SHOTGUN,         AMMO_SHOTGUNSHELL,     50, false, true,  2500   },
-  { WEAPON_MACHINEGUN,      AMMO_MACHINEGUNBULLET, 60, true,  true,  4000   },
-  { WEAPON_FLAMETHROWER,    AMMO_GASCANISTER,      70, true,  true,  7500   },
-  { WEAPON_DYNAMITE,        0,                     35, true,  false, 250    },
-  { WEAPON_GRENADE,         0,                     50, true,  false, 500    },
-  { WEAPON_ROCKETLAUNCHER,  AMMO_ROCKET,           70, true,  true,  10000  },
-  { WEAPON_AREADISRUPTER,   AMMO_ENERGYGLOBE,      99, true,  true,  500000 }
+  { WeaponType::Knife,           AmmoType::None,              20, false, false, 100    },
+  { WeaponType::Pistol,          AmmoType::PistolBullet,     40, false, true,  500    },
+  { WeaponType::Shotgun,         AmmoType::ShotgunShell,     50, false, true,  2500   },
+  { WeaponType::MachineGun,      AmmoType::MachineGunBullet, 60, true,  true,  4000   },
+  { WeaponType::Flamethrower,    AmmoType::GasCanister,      70, true,  true,  7500   },
+  { WeaponType::Dynamite,        AmmoType::None,              35, true,  false, 250    },
+  { WeaponType::Grenade,         AmmoType::None,              50, true,  false, 500    },
+  { WeaponType::RocketLauncher,  AmmoType::Rocket,           70, true,  true,  10000  },
+  { WeaponType::AreaDisrupter,   AmmoType::EnergyGlobe,      99, true,  true,  500000 }
 }};
 
 const std::array<City, CITY_NUM> city_info = {{
-  { CITY_AUSTIN,        COUNTRY_USA       },
-  { CITY_BEIJING,       COUNTRY_CHINA     },
-  { CITY_BOSTON,        COUNTRY_USA       },
-  { CITY_DETROIT,       COUNTRY_USA       },
-  { CITY_LONDON,        COUNTRY_UK        },
-  { CITY_LOSANGELES,    COUNTRY_USA       },
-  { CITY_MIAMI,         COUNTRY_USA       },
-  { CITY_MOSCOW,        COUNTRY_RUSSIA    },
-  { CITY_NEWYORK,       COUNTRY_USA       },
-  { CITY_PARIS,         COUNTRY_FRANCE    },
-  { CITY_SANFRANCISCO,  COUNTRY_USA       },
-  { CITY_STPETERSBURG,  COUNTRY_RUSSIA    },
-  { CITY_SYDNEY,        COUNTRY_AUSTRALIA },
-  { CITY_TORONTO,       COUNTRY_CANADA    },
-  { CITY_VANCOUVER,     COUNTRY_CANADA    }
+  { CityType::Austin,        CountryType::USA       },
+  { CityType::Beijing,       CountryType::China     },
+  { CityType::Boston,        CountryType::USA       },
+  { CityType::Detroit,       CountryType::USA       },
+  { CityType::London,        CountryType::UK        },
+  { CityType::LosAngeles,    CountryType::USA       },
+  { CityType::Miami,         CountryType::USA       },
+  { CityType::Moscow,        CountryType::Russia    },
+  { CityType::NewYork,       CountryType::USA       },
+  { CityType::Paris,         CountryType::France    },
+  { CityType::SanFrancisco,  CountryType::USA       },
+  { CityType::StPetersburg,  CountryType::Russia    },
+  { CityType::Sydney,        CountryType::Australia },
+  { CityType::Toronto,       CountryType::Canada    },
+  { CityType::Vancouver,     CountryType::Canada    }
 }};
 
 GSList *city_list = nullptr;

@@ -43,6 +43,7 @@ enum class WeaponType {
 };
 
 enum class AmmoType {
+  None,
   PistolBullet,
   ShotgunShell,
   MachineGunBullet,
@@ -97,97 +98,9 @@ enum class RankType {
   DrugLord
 };
 
-// Aliases for compatibility
-enum LegacyDrugType {
-  DRUG_COCAINE,
-  DRUG_CRACK,
-  DRUG_ECSTACY,
-  DRUG_HASHISH,
-  DRUG_HEROIN,
-  DRUG_ICE,
-  DRUG_KAT,
-  DRUG_LSD,
-  DRUG_MDA,
-  DRUG_MORPHIN,
-  DRUG_MUSHROOMS,
-  DRUG_OPIUM,
-  DRUG_PCP,
-  DRUG_PEYOTE,
-  DRUG_POT,
-  DRUG_SPECIALK,
-  DRUG_SPEED
-};
-
-enum LegacyWeaponType {
-  WEAPON_KNIFE,
-  WEAPON_PISTOL,
-  WEAPON_SHOTGUN,
-  WEAPON_MACHINEGUN,
-  WEAPON_FLAMETHROWER,
-  WEAPON_DYNAMITE,
-  WEAPON_GRENADE,
-  WEAPON_ROCKETLAUNCHER,
-  WEAPON_AREADISRUPTER
-};
-
-enum LegacyAmmoType {
-  AMMO_PISTOLBULLET,
-  AMMO_SHOTGUNSHELL,
-  AMMO_MACHINEGUNBULLET,
-  AMMO_GASCANISTER,
-  AMMO_ROCKET,
-  AMMO_ENERGYGLOBE
-};
-
-enum LegacyArmorType {
-  ARMOR_HEAVYLEATHERCOAT,
-  ARMOR_BULLETPROOFVEST
-};
-
-enum LegacyItemType {
-  ITEM_CANOFNOSCENT
-};
-
-enum LegacyCityType {
-  CITY_AUSTIN,
-  CITY_BEIJING,
-  CITY_BOSTON,
-  CITY_DETROIT,
-  CITY_LONDON,
-  CITY_LOSANGELES,
-  CITY_MIAMI,
-  CITY_MOSCOW,
-  CITY_NEWYORK,
-  CITY_PARIS,
-  CITY_SANFRANCISCO,
-  CITY_STPETERSBURG,
-  CITY_SYDNEY,
-  CITY_TORONTO,
-  CITY_VANCOUVER
-};
-
-enum LegacyCountryType {
-  COUNTRY_AUSTRALIA,
-  COUNTRY_CANADA,
-  COUNTRY_CHINA,
-  COUNTRY_FRANCE,
-  COUNTRY_UK,
-  COUNTRY_USA,
-  COUNTRY_RUSSIA
-};
-
-enum LegacyRankType {
-  RANK_WANNABE,
-  RANK_SMALLTIME,
-  RANK_DEALER,
-  RANK_BIGDEALER,
-  RANK_DISTRIBUTER,
-  RANK_DRUGLORD
-};
-
 struct City {
-  int id;
-  int country;
+  CityType id;
+  CountryType country;
 };
 
 struct Drug {
@@ -197,8 +110,8 @@ struct Drug {
 };
 
 struct Weapon {
-  int id;
-  int ammo;
+  WeaponType id;
+  AmmoType ammo;
   int destruction;
   bool mass_effect;
   bool has_ammo;
@@ -206,7 +119,7 @@ struct Weapon {
 };
 
 struct Rank {
-  int type;
+  RankType type;
   unsigned long cash;
   int container;
   int capacity;

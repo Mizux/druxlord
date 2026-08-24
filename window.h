@@ -112,11 +112,6 @@ enum {
   COLUMN_INVENTORY_SELLFOR
 };
 
-enum {
-  COLUMN_VAULT_NAME,
-  COLUMN_VAULT_QTY,
-  COLUMN_VAULT_PRICE
-};
 
 extern WindowMain window_main;
 extern WindowFinance window_finance;
