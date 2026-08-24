@@ -1,86 +1,97 @@
 #pragma once
 
-#include <gtk/gtk.h>
+#include <QWidget>
+#include <QDialog>
+#include <QLabel>
+#include <QPushButton>
+#include <QTreeWidget>
+#include <QTextEdit>
+#include <QProgressBar>
+#include <QCheckBox>
+#include <QRadioButton>
+#include <QSpinBox>
+#include <QSlider>
+#include <QMenu>
 
 struct WindowMain {
-  GtkWidget *window;
-  GtkWidget *textview_information;
-  GtkWidget *treeview_market;
-  GtkWidget *treeview_pocket;
-  GtkWidget *button_buy;
-  GtkWidget *button_sell;
-  GtkWidget *button_dump;
-  GtkWidget *button_places;
-  GtkWidget *button_info;
-  GtkWidget *button_stayhere;
-  GtkWidget *button_flyaway;
-  GtkWidget *button_about;
-  GtkWidget *button_docs;
-  GtkWidget *button_highscores;
-  GtkWidget *button_newgamequit;
-  GtkWidget *checkbutton_sound;
-  GtkWidget *label_pocket;
-  GtkWidget *label_location;
-  GtkWidget *label_day;
-  GtkWidget *label_rank;
-  GtkWidget *label_cash;
-  GtkWidget *label_bank;
-  GtkWidget *label_debt;
-  GtkWidget *progressbar_health;
-  GtkWidget *drawingarea_status;
+  QWidget *window = nullptr;
+  QTextEdit *textview_information = nullptr;
+  QTreeWidget *treeview_market = nullptr;
+  QTreeWidget *treeview_pocket = nullptr;
+  QPushButton *button_buy = nullptr;
+  QPushButton *button_sell = nullptr;
+  QPushButton *button_dump = nullptr;
+  QPushButton *button_places = nullptr;
+  QPushButton *button_info = nullptr;
+  QPushButton *button_stayhere = nullptr;
+  QPushButton *button_flyaway = nullptr;
+  QPushButton *button_about = nullptr;
+  QPushButton *button_docs = nullptr;
+  QPushButton *button_highscores = nullptr;
+  QPushButton *button_newgamequit = nullptr;
+  QCheckBox *checkbutton_sound = nullptr;
+  QLabel *label_pocket = nullptr;
+  QLabel *label_location = nullptr;
+  QLabel *label_day = nullptr;
+  QLabel *label_rank = nullptr;
+  QLabel *label_cash = nullptr;
+  QLabel *label_bank = nullptr;
+  QLabel *label_debt = nullptr;
+  QProgressBar *progressbar_health = nullptr;
+  QWidget *drawingarea_status = nullptr;
 };
 
 struct WindowFinance {
-  GtkWidget *window;
-  GtkWidget *radiobutton_depositsome;
-  GtkWidget *radiobutton_depositall;
-  GtkWidget *radiobutton_depositallbut;
-  GtkWidget *radiobutton_withdrawsome;
-  GtkWidget *radiobutton_withdrawall;
-  GtkWidget *radiobutton_withdrawallbut;
-  GtkWidget *spinbutton_amount;
-  GtkWidget *button_doit;
-  GtkWidget *treeview_loan;
-  GtkWidget *label_cash;
-  GtkWidget *label_bank;
-  GtkWidget *label_debt;
-  GtkWidget *button_borrow;
-  GtkWidget *button_repay;
-  GtkWidget *button_done;
+  QDialog *window = nullptr;
+  QRadioButton *radiobutton_depositsome = nullptr;
+  QRadioButton *radiobutton_depositall = nullptr;
+  QRadioButton *radiobutton_depositallbut = nullptr;
+  QRadioButton *radiobutton_withdrawsome = nullptr;
+  QRadioButton *radiobutton_withdrawall = nullptr;
+  QRadioButton *radiobutton_withdrawallbut = nullptr;
+  QSpinBox *spinbutton_amount = nullptr;
+  QPushButton *button_doit = nullptr;
+  QTreeWidget *treeview_loan = nullptr;
+  QLabel *label_cash = nullptr;
+  QLabel *label_bank = nullptr;
+  QLabel *label_debt = nullptr;
+  QPushButton *button_borrow = nullptr;
+  QPushButton *button_repay = nullptr;
+  QPushButton *button_done = nullptr;
 };
 
 struct WindowShopping {
-  GtkWidget *window;
-  GtkWidget *treeview_store;
-  GtkWidget *treeview_inventory;
-  GtkWidget *button_buy;
-  GtkWidget *button_sell;
-  GtkWidget *button_done;
-  GtkWidget *label_cash;
+  QDialog *window = nullptr;
+  QTreeWidget *treeview_store = nullptr;
+  QTreeWidget *treeview_inventory = nullptr;
+  QPushButton *button_buy = nullptr;
+  QPushButton *button_sell = nullptr;
+  QPushButton *button_done = nullptr;
+  QLabel *label_cash = nullptr;
 };
 
 struct WindowHospital {
-  GtkWidget *window;
-  GtkWidget *progressbar_health;
-  GtkWidget *scalebutton_health;
-  GtkWidget *label_cash;
-  GtkWidget *label_cost;
-  GtkWidget *button_ok;
+  QDialog *window = nullptr;
+  QProgressBar *progressbar_health = nullptr;
+  QSlider *scalebutton_health = nullptr;
+  QLabel *label_cash = nullptr;
+  QLabel *label_cost = nullptr;
+  QPushButton *button_ok = nullptr;
 };
 
 struct WindowVault {
-  GtkWidget *window;
-  GtkWidget *treeview_pocket;
-  GtkWidget *treeview_vault;
-  GtkWidget *button_intovault;
-  GtkWidget *button_fromvault;
-  GtkWidget *button_ok;
+  QDialog *window = nullptr;
+  QTreeWidget *treeview_pocket = nullptr;
+  QTreeWidget *treeview_vault = nullptr;
+  QPushButton *button_intovault = nullptr;
+  QPushButton *button_fromvault = nullptr;
+  QPushButton *button_ok = nullptr;
 };
 
 struct WindowInput {
-  GtkWidget *window;
-  GtkWidget *spinbutton_value;
-  GtkWidget *button_ok;
+  QDialog *window = nullptr;
+  QSpinBox *spinbutton_value = nullptr;
+  QPushButton *button_ok = nullptr;
 };
 
 enum {
@@ -112,7 +123,6 @@ enum {
   COLUMN_INVENTORY_SELLFOR
 };
 
-
 extern WindowMain window_main;
 extern WindowFinance window_finance;
 extern WindowShopping window_shopping;
@@ -120,16 +130,16 @@ extern WindowHospital window_hospital;
 extern WindowVault window_vault;
 extern WindowInput window_input;
 
-void create_window_main(GtkApplication *app = nullptr);
+void create_window_main();
 void create_window_finance();
 void create_window_shopping();
 void create_window_hospital();
 void create_window_vault();
-void create_window_input(const gchar *title,
-                         const gchar *message,
-                         const gchar *question);
+void create_window_input(const char *title,
+                         const char *message,
+                         const char *question);
 
-void insert_treeview_drug(GtkTreeView *treeview);
+void insert_treeview_drug(QTreeWidget *treeview);
 void set_label_frame_pocket(int npocket);
 void set_label_location(int location);
 void set_label_day(int day);
@@ -137,5 +147,5 @@ void set_label_rank(int rank);
 void set_label_cash(int value);
 void set_label_bank(int value);
 void set_label_debt(int value);
-GtkWidget* create_places_menu(GtkWidget *button);
-GtkWidget* create_info_menu(GtkWidget *button);
+QMenu* create_places_menu(QPushButton *button);
+QMenu* create_info_menu(QPushButton *button);

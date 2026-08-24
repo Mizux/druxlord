@@ -69,9 +69,14 @@ else()
   message(STATUS "CCache disabled")
 endif()
 
+# Qt Configuration
+set(CMAKE_AUTOMOC ON)
+set(CMAKE_AUTORCC ON)
+set(CMAKE_AUTOUIC ON)
+
 # Dependencies
-find_package(PkgConfig REQUIRED)
-pkg_search_module(GTK REQUIRED IMPORTED_TARGET gtk4)
+find_package(QT NAMES Qt6 Qt5 REQUIRED COMPONENTS Widgets)
+find_package(Qt${QT_VERSION_MAJOR} REQUIRED COMPONENTS Widgets)
 
 # Disable CTest targets
 set_property(GLOBAL PROPERTY CTEST_TARGETS_ADDED 1)
@@ -110,7 +115,7 @@ elseif(UNIX AND NOT APPLE)
 endif()
 
 target_link_libraries(druxlord PRIVATE
-  PkgConfig::GTK
+  Qt${QT_VERSION_MAJOR}::Widgets
 )
 add_executable(${PROJECT_NAMESPACE}::druxlord ALIAS druxlord)
 

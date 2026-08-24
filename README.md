@@ -1,6 +1,6 @@
 # Drux Lord
 
-A Linux clone of the classic game [Drug Lord 2](http://www.geekhideout.com/druglord2.shtml) built with modern C++20 and GTK 4.
+A Linux clone of the classic game [Drug Lord 2](http://www.geekhideout.com/druglord2.shtml) built with modern C++20 and Qt 6 (or Qt 5).
 
 ## Description
 
@@ -12,13 +12,12 @@ To build Drux Lord, ensure you have the following installed on your system:
 
 - **C++ Compiler** supporting C++20 (GCC 11+, Clang 13+, or MSVC)
 - **CMake** (version 3.24 or higher)
-- **GTK 4** development libraries (`libgtk-4-dev` on Debian/Ubuntu)
-- **PkgConfig**
+- **Qt 6 or Qt 5** development libraries (`qt6-base-dev` or `qtbase5-dev` on Debian/Ubuntu)
 
 On Debian/Ubuntu-based distributions:
 ```bash
 sudo apt update
-sudo apt install build-essential cmake pkg-config libgtk-4-dev
+sudo apt install build-essential cmake qt6-base-dev
 ```
 
 ## Building and Running

@@ -101,7 +101,6 @@ const std::array<City, CITY_NUM> city_info = {{
   { CityType::Vancouver,     CountryType::Canada    }
 }};
 
-GSList *city_list = nullptr;
 Drug drug_table[DRUG_NUM][CITY_NUM];
 
 std::string money_string(unsigned int value) {

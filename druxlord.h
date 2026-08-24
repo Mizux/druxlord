@@ -1,6 +1,5 @@
 #pragma once
 
-#include <glib.h>
 #include <array>
 #include <string>
 
@@ -132,7 +131,6 @@ extern const std::array<const char*, COUNTRY_NUM> country_name;
 extern const std::array<Weapon, WEAPON_NUM> weapon_info;
 extern const std::array<City, CITY_NUM> city_info;
 
-extern GSList *city_list;
 extern Drug drug_table[DRUG_NUM][CITY_NUM];
 
 std::string money_string(unsigned int value);

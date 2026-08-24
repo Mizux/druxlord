@@ -1,6 +1,24 @@
 #include "window.h"
 
-#include <gtk/gtk.h>
+#include <QApplication>
+#include <QBoxLayout>
+#include <QButtonGroup>
+#include <QCheckBox>
+#include <QDialog>
+#include <QGridLayout>
+#include <QGroupBox>
+#include <QHeaderView>
+#include <QLabel>
+#include <QMenu>
+#include <QProgressBar>
+#include <QPushButton>
+#include <QSlider>
+#include <QSpinBox>
+#include <QStyle>
+#include <QTextEdit>
+#include <QTreeWidget>
+#include <QWidget>
+
 #include <array>
 #include <format>
 #include <string>
@@ -20,1017 +38,739 @@ WindowHospital window_hospital{};
 WindowVault window_vault{};
 WindowInput window_input{};
 
-void insert_treeview_drug(GtkTreeView *treeview) {
-  GtkTreeIter iter;
-  GtkTreeModel *model = gtk_tree_view_get_model(treeview);
-  int j = 0;
+static QGroupBox *group_pocket = nullptr;
 
-  gtk_list_store_clear(GTK_LIST_STORE(model));
+void insert_treeview_drug(QTreeWidget *treeview) {
+  if (!treeview) return;
+  treeview->clear();
+  int j = 0;
 
   for (int i = 0; i < DRUG_NUM; ++i) {
     if (drug_table[i][j].available) {
       std::string price_str = money_string(drug_table[i][j].price);
-      gtk_list_store_append(GTK_LIST_STORE(model), &iter);
-      gtk_list_store_set(GTK_LIST_STORE(model), &iter,
-                         COLUMN_NAME, drug_name[i],
-                         COLUMN_QTY, drug_table[i][j].qty,
-                         COLUMN_PRICE, price_str.c_str(), -1);
+      QTreeWidgetItem *item = new QTreeWidgetItem(treeview);
+      if (treeview->columnCount() == 4) {
+        item->setText(COLUMN_NAME, QString::fromUtf8(drug_name[i]));
+        item->setText(COLUMN_QTY, QString::number(drug_table[i][j].qty));
+        item->setText(COLUMN_PRICE, QString::fromStdString(price_str));
+        item->setTextAlignment(COLUMN_QTY, Qt::AlignRight | Qt::AlignVCenter);
+        item->setTextAlignment(COLUMN_PRICE, Qt::AlignRight | Qt::AlignVCenter);
+      } else {
+        item->setText(0, QString::fromUtf8(drug_name[i]));
+        item->setText(1, QString::number(drug_table[i][j].qty));
+        item->setText(2, QString::fromStdString(price_str));
+        item->setTextAlignment(1, Qt::AlignRight | Qt::AlignVCenter);
+        item->setTextAlignment(2, Qt::AlignRight | Qt::AlignVCenter);
+      }
     }
   }
 }
 
-static GtkWidget* create_treeview_drug(gboolean with_status) {
-  GtkWidget *treeview = gtk_tree_view_new();
-  GtkListStore *store = nullptr;
+static QTreeWidget* create_treeview_drug(bool with_status) {
+  QTreeWidget *treeview = new QTreeWidget();
+  treeview->setRootIsDecorated(false);
+  treeview->setUniformRowHeights(true);
+  treeview->header()->setStretchLastSection(false);
 
   if (with_status) {
-    store = gtk_list_store_new(4, GDK_TYPE_PIXBUF, G_TYPE_STRING, G_TYPE_INT, G_TYPE_STRING);
+    treeview->setColumnCount(4);
+    treeview->setHeaderLabels({"", "Name", "Qty", "Price"});
+    treeview->setColumnWidth(COLUMN_STATUS, 24);
+    treeview->setColumnWidth(COLUMN_NAME, COLUMN_NAME_WIDTH);
+    treeview->setColumnWidth(COLUMN_QTY, COLUMN_QTY_WIDTH);
+    treeview->setColumnWidth(COLUMN_PRICE, COLUMN_PRICE_WIDTH);
+    treeview->headerItem()->setTextAlignment(COLUMN_QTY, Qt::AlignRight | Qt::AlignVCenter);
+    treeview->headerItem()->setTextAlignment(COLUMN_PRICE, Qt::AlignRight | Qt::AlignVCenter);
   } else {
-    store = gtk_list_store_new(3, G_TYPE_STRING, G_TYPE_INT, G_TYPE_LONG);
+    treeview->setColumnCount(3);
+    treeview->setHeaderLabels({"Name", "Qty", "Price"});
+    treeview->setColumnWidth(0, COLUMN_NAME_WIDTH);
+    treeview->setColumnWidth(1, COLUMN_QTY_WIDTH);
+    treeview->setColumnWidth(2, COLUMN_PRICE_WIDTH);
+    treeview->headerItem()->setTextAlignment(1, Qt::AlignRight | Qt::AlignVCenter);
+    treeview->headerItem()->setTextAlignment(2, Qt::AlignRight | Qt::AlignVCenter);
   }
-  gtk_tree_view_set_model(GTK_TREE_VIEW(treeview), GTK_TREE_MODEL(store));
-
-  if (with_status) {
-    GtkCellRenderer *renderer = gtk_cell_renderer_pixbuf_new();
-    GtkTreeViewColumn *column = gtk_tree_view_column_new_with_attributes(
-        "", renderer, "pixbuf", COLUMN_STATUS, nullptr);
-    gtk_tree_view_append_column(GTK_TREE_VIEW(treeview), column);
-  }
-
-  GtkCellRenderer *renderer = gtk_cell_renderer_text_new();
-  GtkTreeViewColumn *column = gtk_tree_view_column_new_with_attributes(
-      "Name", renderer, "text", COLUMN_NAME, nullptr);
-  gtk_tree_view_column_set_sizing(column, GTK_TREE_VIEW_COLUMN_FIXED);
-  gtk_tree_view_column_set_min_width(column, COLUMN_NAME_WIDTH);
-  gtk_tree_view_append_column(GTK_TREE_VIEW(treeview), column);
-
-  renderer = gtk_cell_renderer_text_new();
-  gtk_cell_renderer_set_alignment(renderer, 0.9f, 0.5f);
-  column = gtk_tree_view_column_new_with_attributes(
-      "Qty", renderer, "text", COLUMN_QTY, nullptr);
-  gtk_tree_view_column_set_sizing(column, GTK_TREE_VIEW_COLUMN_FIXED);
-  gtk_tree_view_column_set_min_width(column, COLUMN_QTY_WIDTH);
-  gtk_tree_view_column_set_alignment(column, 0.9f);
-  gtk_tree_view_append_column(GTK_TREE_VIEW(treeview), column);
-
-  renderer = gtk_cell_renderer_text_new();
-  gtk_cell_renderer_set_alignment(renderer, 0.9f, 0.5f);
-  column = gtk_tree_view_column_new_with_attributes(
-      "Price", renderer, "text", COLUMN_PRICE, nullptr);
-  gtk_tree_view_column_set_sizing(column, GTK_TREE_VIEW_COLUMN_FIXED);
-  gtk_tree_view_column_set_min_width(column, COLUMN_PRICE_WIDTH);
-  gtk_tree_view_column_set_alignment(column, 0.9f);
-  gtk_tree_view_append_column(GTK_TREE_VIEW(treeview), column);
 
   return treeview;
 }
 
 void set_label_frame_pocket(int npocket) {
   auto str = std::format("You pants pocket ({}/10)", npocket);
-  gtk_label_set_text(GTK_LABEL(window_main.label_pocket), str.c_str());
+  if (window_main.label_pocket) {
+    window_main.label_pocket->setText(QString::fromStdString(str));
+  }
+  if (group_pocket) {
+    group_pocket->setTitle(QString::fromStdString(str));
+  }
 }
 
 void set_label_location(int location) {
   constexpr std::array location_str = {"Austin, US"};
   auto markup = std::format("<span><b>{}</b></span>", location_str[0]);
-  gtk_label_set_markup(GTK_LABEL(window_main.label_location), markup.c_str());
+  if (window_main.label_location) {
+    window_main.label_location->setText(QString::fromStdString(markup));
+  }
 }
 
 void set_label_day(int day) {
   auto markup = std::format("<span><b>{}/30</b></span>", day);
-  gtk_label_set_markup(GTK_LABEL(window_main.label_day), markup.c_str());
+  if (window_main.label_day) {
+    window_main.label_day->setText(QString::fromStdString(markup));
+  }
 }
 
 void set_label_rank(int rank) {
   constexpr std::array rank_str = {"wannabe"};
   auto markup = std::format("<span><b>{}</b></span>", rank_str[0]);
-  gtk_label_set_markup(GTK_LABEL(window_main.label_rank), markup.c_str());
+  if (window_main.label_rank) {
+    window_main.label_rank->setText(QString::fromStdString(markup));
+  }
 }
 
 void set_label_cash(int value) {
   auto markup = std::format("<span><b>{}</b></span>", value);
-  gtk_label_set_markup(GTK_LABEL(window_main.label_cash), markup.c_str());
+  if (window_main.label_cash) {
+    window_main.label_cash->setText(QString::fromStdString(markup));
+  }
 }
 
 void set_label_bank(int value) {
   auto markup = std::format("<span><b>{}</b></span>", value);
-  gtk_label_set_markup(GTK_LABEL(window_main.label_bank), markup.c_str());
+  if (window_main.label_bank) {
+    window_main.label_bank->setText(QString::fromStdString(markup));
+  }
 }
 
 void set_label_debt(int value) {
   std::string markup;
   if (value > 0) {
-    markup = std::format("<span foreground=\"#FF0000\"><b>{}</b></span>", value);
+    markup = std::format("<span style=\"color:#FF0000;\"><b>{}</b></span>", value);
   } else {
     markup = std::format("<span><b>{}</b></span>", value);
   }
-  gtk_label_set_markup(GTK_LABEL(window_main.label_debt), markup.c_str());
+  if (window_main.label_debt) {
+    window_main.label_debt->setText(QString::fromStdString(markup));
+  }
 }
 
-void create_window_main(GtkApplication *app) {
-  if (app) {
-    window_main.window = gtk_application_window_new(app);
-  } else {
-    window_main.window = gtk_window_new();
-  }
-  gtk_window_set_title(GTK_WINDOW(window_main.window), PROGRAM_NAME);
-  gtk_window_set_resizable(GTK_WINDOW(window_main.window), FALSE);
-  g_signal_connect(window_main.window, "close-request",
-                   G_CALLBACK(window_main_window_close_request_cb), nullptr);
+void create_window_main() {
+  window_main.window = new QWidget();
+  window_main.window->setWindowTitle(QString::fromUtf8(kProgramName.data(), kProgramName.size()));
 
-  GtkWidget *vbox_main = gtk_box_new(GTK_ORIENTATION_VERTICAL, 5);
-  gtk_widget_set_margin_top(vbox_main, 5);
-  gtk_widget_set_margin_bottom(vbox_main, 5);
-  gtk_widget_set_margin_start(vbox_main, 5);
-  gtk_widget_set_margin_end(vbox_main, 5);
-  gtk_window_set_child(GTK_WINDOW(window_main.window), vbox_main);
+  QVBoxLayout *vbox_main = new QVBoxLayout(window_main.window);
+  vbox_main->setContentsMargins(5, 5, 5, 5);
+  vbox_main->setSpacing(5);
 
-  GtkWidget *frame = gtk_frame_new("Information");
-  gtk_box_append(GTK_BOX(vbox_main), frame);
+  QGroupBox *frame_info = new QGroupBox("Information", window_main.window);
+  QVBoxLayout *vbox_info = new QVBoxLayout(frame_info);
+  vbox_info->setContentsMargins(5, 5, 5, 5);
+  window_main.textview_information = new QTextEdit(frame_info);
+  window_main.textview_information->setReadOnly(true);
+  window_main.textview_information->setFixedHeight(120);
+  vbox_info->addWidget(window_main.textview_information);
+  vbox_main->addWidget(frame_info);
 
-  GtkWidget *scrolled_window = gtk_scrolled_window_new();
-  gtk_scrolled_window_set_policy(GTK_SCROLLED_WINDOW(scrolled_window),
-                                 GTK_POLICY_NEVER,
-                                 GTK_POLICY_AUTOMATIC);
-  gtk_scrolled_window_set_has_frame(GTK_SCROLLED_WINDOW(scrolled_window), TRUE);
-  gtk_widget_set_size_request(scrolled_window, -1, 120);
-  gtk_widget_set_margin_top(scrolled_window, 5);
-  gtk_widget_set_margin_bottom(scrolled_window, 5);
-  gtk_widget_set_margin_start(scrolled_window, 5);
-  gtk_widget_set_margin_end(scrolled_window, 5);
-  gtk_frame_set_child(GTK_FRAME(frame), scrolled_window);
+  QHBoxLayout *hbox_down = new QHBoxLayout();
+  hbox_down->setSpacing(8);
+  vbox_main->addLayout(hbox_down);
 
-  window_main.textview_information = gtk_text_view_new();
-  gtk_text_view_set_editable(GTK_TEXT_VIEW(window_main.textview_information), FALSE);
-  gtk_scrolled_window_set_child(GTK_SCROLLED_WINDOW(scrolled_window), window_main.textview_information);
+  QGroupBox *frame_market = new QGroupBox("The Market", window_main.window);
+  QVBoxLayout *vbox_market = new QVBoxLayout(frame_market);
+  vbox_market->setContentsMargins(5, 5, 5, 5);
+  window_main.treeview_market = create_treeview_drug(true);
+  window_main.treeview_market->setMinimumSize(270, 240);
+  vbox_market->addWidget(window_main.treeview_market);
+  hbox_down->addWidget(frame_market);
 
-  GtkWidget *hbox_down = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 8);
-  gtk_box_append(GTK_BOX(vbox_main), hbox_down);
+  QVBoxLayout *vbox_middle = new QVBoxLayout();
+  vbox_middle->setSpacing(5);
+  hbox_down->addLayout(vbox_middle);
 
-  frame = gtk_frame_new("The Market");
-  gtk_box_append(GTK_BOX(hbox_down), frame);
+  QGroupBox *frame_action = new QGroupBox("Action", window_main.window);
+  QVBoxLayout *box_action = new QVBoxLayout(frame_action);
+  box_action->setContentsMargins(5, 5, 5, 5);
+  box_action->setSpacing(3);
 
-  scrolled_window = gtk_scrolled_window_new();
-  gtk_scrolled_window_set_policy(GTK_SCROLLED_WINDOW(scrolled_window),
-                                 GTK_POLICY_NEVER,
-                                 GTK_POLICY_AUTOMATIC);
-  gtk_scrolled_window_set_has_frame(GTK_SCROLLED_WINDOW(scrolled_window), TRUE);
-  gtk_widget_set_margin_top(scrolled_window, 5);
-  gtk_widget_set_margin_bottom(scrolled_window, 5);
-  gtk_widget_set_margin_start(scrolled_window, 5);
-  gtk_widget_set_margin_end(scrolled_window, 5);
-  gtk_frame_set_child(GTK_FRAME(frame), scrolled_window);
+  window_main.button_buy = new QPushButton(QString::fromUtf8("&Buy \u2192"), frame_action);
+  QObject::connect(window_main.button_buy, &QPushButton::clicked, window_main_button_buy_clicked_cb);
+  box_action->addWidget(window_main.button_buy);
 
-  window_main.treeview_market = create_treeview_drug(TRUE);
-  gtk_scrolled_window_set_child(GTK_SCROLLED_WINDOW(scrolled_window), window_main.treeview_market);
+  window_main.button_sell = new QPushButton(QString::fromUtf8("\u2190 &Sell"), frame_action);
+  box_action->addWidget(window_main.button_sell);
 
-  GtkWidget *vbox = gtk_box_new(GTK_ORIENTATION_VERTICAL, 5);
-  gtk_box_append(GTK_BOX(hbox_down), vbox);
+  window_main.button_dump = new QPushButton("&Dump", frame_action);
+  box_action->addWidget(window_main.button_dump);
 
-  frame = gtk_frame_new("Action");
-  gtk_box_append(GTK_BOX(vbox), frame);
-
-  GtkWidget *box = gtk_box_new(GTK_ORIENTATION_VERTICAL, 3);
-  gtk_widget_set_margin_top(box, 5);
-  gtk_widget_set_margin_bottom(box, 5);
-  gtk_widget_set_margin_start(box, 5);
-  gtk_widget_set_margin_end(box, 5);
-  gtk_frame_set_child(GTK_FRAME(frame), box);
-
-  window_main.button_buy = gtk_button_new_with_mnemonic("_Buy \u2192");
-  gtk_box_append(GTK_BOX(box), window_main.button_buy);
-  g_signal_connect(window_main.button_buy, "clicked",
-                   G_CALLBACK(window_main_button_buy_clicked_cb), nullptr);
-
-  window_main.button_sell = gtk_button_new_with_mnemonic("\u2190 _Sell");
-  gtk_box_append(GTK_BOX(box), window_main.button_sell);
-
-  window_main.button_dump = gtk_button_new_with_mnemonic("_Dump");
-  gtk_box_append(GTK_BOX(box), window_main.button_dump);
-
-  window_main.button_places = gtk_menu_button_new();
-  gtk_menu_button_set_label(GTK_MENU_BUTTON(window_main.button_places), "Places...");
-  gtk_menu_button_set_use_underline(GTK_MENU_BUTTON(window_main.button_places), TRUE);
+  window_main.button_places = new QPushButton("Places...", frame_action);
   create_places_menu(window_main.button_places);
-  gtk_box_append(GTK_BOX(box), window_main.button_places);
+  box_action->addWidget(window_main.button_places);
 
-  window_main.button_info = gtk_menu_button_new();
-  gtk_menu_button_set_label(GTK_MENU_BUTTON(window_main.button_info), "Info...");
-  gtk_menu_button_set_use_underline(GTK_MENU_BUTTON(window_main.button_info), TRUE);
+  window_main.button_info = new QPushButton("Info...", frame_action);
   create_info_menu(window_main.button_info);
-  gtk_box_append(GTK_BOX(box), window_main.button_info);
+  box_action->addWidget(window_main.button_info);
 
-  frame = gtk_frame_new("Tomorrow");
-  gtk_box_append(GTK_BOX(vbox), frame);
+  vbox_middle->addWidget(frame_action);
 
-  box = gtk_box_new(GTK_ORIENTATION_VERTICAL, 3);
-  gtk_widget_set_margin_top(box, 5);
-  gtk_widget_set_margin_bottom(box, 5);
-  gtk_widget_set_margin_start(box, 5);
-  gtk_widget_set_margin_end(box, 5);
-  gtk_frame_set_child(GTK_FRAME(frame), box);
+  QGroupBox *frame_tomorrow = new QGroupBox("Tomorrow", window_main.window);
+  QVBoxLayout *box_tomorrow = new QVBoxLayout(frame_tomorrow);
+  box_tomorrow->setContentsMargins(5, 5, 5, 5);
+  box_tomorrow->setSpacing(3);
 
-  window_main.button_stayhere = gtk_button_new_with_mnemonic("Stay Here");
-  g_signal_connect(window_main.button_stayhere, "clicked",
-                   G_CALLBACK(window_main_button_stayhere_clicked_cb), nullptr);
-  gtk_box_append(GTK_BOX(box), window_main.button_stayhere);
+  window_main.button_stayhere = new QPushButton("Stay Here", frame_tomorrow);
+  QObject::connect(window_main.button_stayhere, &QPushButton::clicked, window_main_button_stayhere_clicked_cb);
+  box_tomorrow->addWidget(window_main.button_stayhere);
 
-  window_main.button_flyaway = gtk_button_new_with_mnemonic("Fly Away");
-  gtk_box_append(GTK_BOX(box), window_main.button_flyaway);
+  window_main.button_flyaway = new QPushButton("Fly Away", frame_tomorrow);
+  box_tomorrow->addWidget(window_main.button_flyaway);
 
-  frame = gtk_frame_new("Game");
-  gtk_box_append(GTK_BOX(vbox), frame);
+  vbox_middle->addWidget(frame_tomorrow);
 
-  box = gtk_box_new(GTK_ORIENTATION_VERTICAL, 3);
-  gtk_widget_set_margin_top(box, 5);
-  gtk_widget_set_margin_bottom(box, 5);
-  gtk_widget_set_margin_start(box, 5);
-  gtk_widget_set_margin_end(box, 5);
-  gtk_frame_set_child(GTK_FRAME(frame), box);
+  QGroupBox *frame_game = new QGroupBox("Game", window_main.window);
+  QVBoxLayout *box_game = new QVBoxLayout(frame_game);
+  box_game->setContentsMargins(5, 5, 5, 5);
+  box_game->setSpacing(3);
 
-  window_main.checkbutton_sound = gtk_check_button_new_with_mnemonic("Sou_nd");
-  gtk_box_append(GTK_BOX(box), window_main.checkbutton_sound);
+  window_main.checkbutton_sound = new QCheckBox("Sou&nd", frame_game);
+  box_game->addWidget(window_main.checkbutton_sound);
 
-  window_main.button_about = gtk_button_new_with_mnemonic("_About");
-  gtk_box_append(GTK_BOX(box), window_main.button_about);
+  window_main.button_about = new QPushButton("&About", frame_game);
+  box_game->addWidget(window_main.button_about);
 
-  window_main.button_docs = gtk_button_new_with_mnemonic("Docs");
-  gtk_box_append(GTK_BOX(box), window_main.button_docs);
+  window_main.button_docs = new QPushButton("Docs", frame_game);
+  box_game->addWidget(window_main.button_docs);
 
-  window_main.button_highscores = gtk_button_new_with_mnemonic("High Scores");
-  gtk_box_append(GTK_BOX(box), window_main.button_highscores);
+  window_main.button_highscores = new QPushButton("High Scores", frame_game);
+  box_game->addWidget(window_main.button_highscores);
 
-  window_main.button_newgamequit = gtk_button_new_with_mnemonic("New _Game");
-  gtk_box_append(GTK_BOX(box), window_main.button_newgamequit);
+  window_main.button_newgamequit = new QPushButton("New &Game", frame_game);
+  box_game->addWidget(window_main.button_newgamequit);
 
-  vbox = gtk_box_new(GTK_ORIENTATION_VERTICAL, 5);
-  gtk_box_append(GTK_BOX(hbox_down), vbox);
+  vbox_middle->addWidget(frame_game);
+  vbox_middle->addStretch();
 
-  frame = gtk_frame_new(nullptr);
-  gtk_box_append(GTK_BOX(vbox), frame);
+  QVBoxLayout *vbox_right = new QVBoxLayout();
+  vbox_right->setSpacing(5);
+  hbox_down->addLayout(vbox_right);
 
-  window_main.label_pocket = gtk_label_new(nullptr);
+  group_pocket = new QGroupBox("You pants pocket (0/10)", window_main.window);
+  QVBoxLayout *vbox_pocket = new QVBoxLayout(group_pocket);
+  vbox_pocket->setContentsMargins(5, 5, 5, 5);
+  window_main.label_pocket = new QLabel(group_pocket);
+  window_main.label_pocket->hide();
   set_label_frame_pocket(0);
-  gtk_frame_set_label_widget(GTK_FRAME(frame), window_main.label_pocket);
 
-  scrolled_window = gtk_scrolled_window_new();
-  gtk_scrolled_window_set_policy(GTK_SCROLLED_WINDOW(scrolled_window),
-                                 GTK_POLICY_NEVER,
-                                 GTK_POLICY_AUTOMATIC);
-  gtk_scrolled_window_set_has_frame(GTK_SCROLLED_WINDOW(scrolled_window), TRUE);
-  gtk_widget_set_margin_top(scrolled_window, 5);
-  gtk_widget_set_margin_bottom(scrolled_window, 5);
-  gtk_widget_set_margin_start(scrolled_window, 5);
-  gtk_widget_set_margin_end(scrolled_window, 5);
-  gtk_frame_set_child(GTK_FRAME(frame), scrolled_window);
+  window_main.treeview_pocket = create_treeview_drug(false);
+  window_main.treeview_pocket->setMinimumSize(250, 180);
+  vbox_pocket->addWidget(window_main.treeview_pocket);
+  vbox_right->addWidget(group_pocket);
 
-  window_main.treeview_pocket = create_treeview_drug(FALSE);
-  gtk_scrolled_window_set_child(GTK_SCROLLED_WINDOW(scrolled_window), window_main.treeview_pocket);
+  QGroupBox *frame_status = new QGroupBox("Status", window_main.window);
+  QVBoxLayout *vbox_status = new QVBoxLayout(frame_status);
+  vbox_status->setContentsMargins(5, 5, 5, 5);
+  vbox_status->setSpacing(5);
 
-  frame = gtk_frame_new("Status");
-  gtk_box_append(GTK_BOX(vbox), frame);
-
-  vbox = gtk_box_new(GTK_ORIENTATION_VERTICAL, 5);
-  gtk_widget_set_margin_top(vbox, 5);
-  gtk_widget_set_margin_bottom(vbox, 5);
-  gtk_widget_set_margin_start(vbox, 5);
-  gtk_widget_set_margin_end(vbox, 5);
-  gtk_frame_set_child(GTK_FRAME(frame), vbox);
-
-  box = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 10);
-  gtk_box_append(GTK_BOX(vbox), box);
-
-  GtkWidget *label = gtk_label_new("Location:");
-  gtk_box_append(GTK_BOX(box), label);
-
-  window_main.label_location = gtk_label_new(nullptr);
-  gtk_label_set_use_markup(GTK_LABEL(window_main.label_location), TRUE);
-  gtk_box_append(GTK_BOX(box), window_main.label_location);
+  QHBoxLayout *box_loc = new QHBoxLayout();
+  box_loc->setSpacing(10);
+  QLabel *label_loc_title = new QLabel("Location:", frame_status);
+  box_loc->addWidget(label_loc_title);
+  window_main.label_location = new QLabel(frame_status);
   set_label_location(0);
+  box_loc->addWidget(window_main.label_location);
+  box_loc->addStretch();
+  vbox_status->addLayout(box_loc);
 
-  box = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 10);
-  gtk_box_append(GTK_BOX(vbox), box);
+  QHBoxLayout *box_health = new QHBoxLayout();
+  box_health->setSpacing(10);
+  QLabel *label_health_title = new QLabel("Health:", frame_status);
+  box_health->addWidget(label_health_title);
+  window_main.progressbar_health = new QProgressBar(frame_status);
+  window_main.progressbar_health->setRange(0, 100);
+  window_main.progressbar_health->setValue(100);
+  window_main.progressbar_health->setTextVisible(false);
+  box_health->addWidget(window_main.progressbar_health);
+  vbox_status->addLayout(box_health);
 
-  label = gtk_label_new("Health:");
-  gtk_box_append(GTK_BOX(box), label);
+  QHBoxLayout *box_day_rank = new QHBoxLayout();
+  box_day_rank->setSpacing(30);
 
-  window_main.progressbar_health = gtk_progress_bar_new();
-  gtk_widget_set_hexpand(window_main.progressbar_health, TRUE);
-  gtk_box_append(GTK_BOX(box), window_main.progressbar_health);
-
-  box = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 30);
-  gtk_box_append(GTK_BOX(vbox), box);
-
-  GtkWidget *box2 = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 10);
-  gtk_box_append(GTK_BOX(box), box2);
-
-  label = gtk_label_new("Day:");
-  gtk_box_append(GTK_BOX(box2), label);
-
-  window_main.label_day = gtk_label_new(nullptr);
-  gtk_label_set_use_markup(GTK_LABEL(window_main.label_day), TRUE);
+  QHBoxLayout *box_day = new QHBoxLayout();
+  box_day->setSpacing(10);
+  QLabel *label_day_title = new QLabel("Day:", frame_status);
+  box_day->addWidget(label_day_title);
+  window_main.label_day = new QLabel(frame_status);
   set_label_day(0);
-  gtk_box_append(GTK_BOX(box2), window_main.label_day);
+  box_day->addWidget(window_main.label_day);
+  box_day_rank->addLayout(box_day);
 
-  box2 = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 10);
-  gtk_box_append(GTK_BOX(box), box2);
-
-  label = gtk_label_new("Rank:");
-  gtk_box_append(GTK_BOX(box2), label);
-
-  window_main.label_rank = gtk_label_new(nullptr);
-  gtk_label_set_use_markup(GTK_LABEL(window_main.label_rank), TRUE);
+  QHBoxLayout *box_rank = new QHBoxLayout();
+  box_rank->setSpacing(10);
+  QLabel *label_rank_title = new QLabel("Rank:", frame_status);
+  box_rank->addWidget(label_rank_title);
+  window_main.label_rank = new QLabel(frame_status);
   set_label_rank(0);
-  gtk_box_append(GTK_BOX(box2), window_main.label_rank);
+  box_rank->addWidget(window_main.label_rank);
+  box_day_rank->addLayout(box_rank);
+  box_day_rank->addStretch();
+  vbox_status->addLayout(box_day_rank);
 
-  box = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 0);
-  gtk_box_append(GTK_BOX(vbox), box);
+  QHBoxLayout *box_money_status = new QHBoxLayout();
+  box_money_status->setSpacing(0);
 
-  GtkWidget *grid = gtk_grid_new();
-  gtk_grid_set_row_spacing(GTK_GRID(grid), 5);
-  gtk_grid_set_column_spacing(GTK_GRID(grid), 50);
-  gtk_box_append(GTK_BOX(box), grid);
+  QGridLayout *grid_money = new QGridLayout();
+  grid_money->setHorizontalSpacing(50);
+  grid_money->setVerticalSpacing(5);
 
-  label = gtk_label_new("Cash:");
-  gtk_label_set_xalign(GTK_LABEL(label), 0.0f);
-  gtk_grid_attach(GTK_GRID(grid), label, 0, 0, 1, 1);
-
-  window_main.label_cash = gtk_label_new(nullptr);
-  gtk_label_set_use_markup(GTK_LABEL(window_main.label_cash), TRUE);
-  gtk_label_set_xalign(GTK_LABEL(window_main.label_cash), 1.0f);
+  QLabel *label_cash_title = new QLabel("Cash:", frame_status);
+  grid_money->addWidget(label_cash_title, 0, 0, Qt::AlignLeft);
+  window_main.label_cash = new QLabel(frame_status);
   set_label_cash(1900);
-  gtk_grid_attach(GTK_GRID(grid), window_main.label_cash, 1, 0, 1, 1);
+  grid_money->addWidget(window_main.label_cash, 0, 1, Qt::AlignRight);
 
-  label = gtk_label_new("Bank:");
-  gtk_label_set_xalign(GTK_LABEL(label), 0.0f);
-  gtk_grid_attach(GTK_GRID(grid), label, 0, 1, 1, 1);
-
-  window_main.label_bank = gtk_label_new(nullptr);
-  gtk_label_set_use_markup(GTK_LABEL(window_main.label_bank), TRUE);
-  gtk_label_set_xalign(GTK_LABEL(window_main.label_bank), 1.0f);
+  QLabel *label_bank_title = new QLabel("Bank:", frame_status);
+  grid_money->addWidget(label_bank_title, 1, 0, Qt::AlignLeft);
+  window_main.label_bank = new QLabel(frame_status);
   set_label_bank(0);
-  gtk_grid_attach(GTK_GRID(grid), window_main.label_bank, 1, 1, 1, 1);
+  grid_money->addWidget(window_main.label_bank, 1, 1, Qt::AlignRight);
 
-  label = gtk_label_new("Debt:");
-  gtk_label_set_xalign(GTK_LABEL(label), 0.0f);
-  gtk_grid_attach(GTK_GRID(grid), label, 0, 2, 1, 1);
-
-  window_main.label_debt = gtk_label_new(nullptr);
-  gtk_label_set_use_markup(GTK_LABEL(window_main.label_debt), TRUE);
-  gtk_label_set_xalign(GTK_LABEL(window_main.label_debt), 1.0f);
+  QLabel *label_debt_title = new QLabel("Debt:", frame_status);
+  grid_money->addWidget(label_debt_title, 2, 0, Qt::AlignLeft);
+  window_main.label_debt = new QLabel(frame_status);
   set_label_debt(0);
-  gtk_grid_attach(GTK_GRID(grid), window_main.label_debt, 1, 2, 1, 1);
+  grid_money->addWidget(window_main.label_debt, 2, 1, Qt::AlignRight);
 
-  window_main.drawingarea_status = gtk_drawing_area_new();
-  gtk_box_append(GTK_BOX(box), window_main.drawingarea_status);
+  box_money_status->addLayout(grid_money);
+
+  window_main.drawingarea_status = new QWidget(frame_status);
+  box_money_status->addWidget(window_main.drawingarea_status);
+  vbox_status->addLayout(box_money_status);
+
+  vbox_right->addWidget(frame_status);
+
+  window_main.window->layout()->setSizeConstraint(QLayout::SetFixedSize);
 }
 
 void create_window_finance() {
-  window_finance.window = gtk_window_new();
-  gtk_window_set_title(GTK_WINDOW(window_finance.window), "Finance");
-  gtk_window_set_transient_for(GTK_WINDOW(window_finance.window),
-                                GTK_WINDOW(window_main.window));
-  gtk_window_set_modal(GTK_WINDOW(window_finance.window), TRUE);
-  gtk_window_set_resizable(GTK_WINDOW(window_finance.window), FALSE);
-  g_signal_connect_swapped(window_finance.window, "close-request",
-                            G_CALLBACK(gtk_window_destroy), window_finance.window);
+  if (window_finance.window) {
+    delete window_finance.window;
+  }
+  window_finance.window = new QDialog(window_main.window);
+  window_finance.window->setWindowTitle("Finance");
+  window_finance.window->setModal(true);
 
-  GtkWidget *vbox_main = gtk_box_new(GTK_ORIENTATION_VERTICAL, 5);
-  gtk_widget_set_margin_top(vbox_main, 5);
-  gtk_widget_set_margin_bottom(vbox_main, 5);
-  gtk_widget_set_margin_start(vbox_main, 5);
-  gtk_widget_set_margin_end(vbox_main, 5);
-  gtk_window_set_child(GTK_WINDOW(window_finance.window), vbox_main);
+  QVBoxLayout *vbox_main = new QVBoxLayout(window_finance.window);
+  vbox_main->setContentsMargins(5, 5, 5, 5);
+  vbox_main->setSpacing(5);
 
-  GtkWidget *frame = gtk_frame_new("Bank");
-  gtk_box_append(GTK_BOX(vbox_main), frame);
+  QGroupBox *frame_bank = new QGroupBox("Bank", window_finance.window);
+  QVBoxLayout *vbox_bank = new QVBoxLayout(frame_bank);
+  vbox_bank->setContentsMargins(5, 5, 5, 5);
+  vbox_bank->setSpacing(3);
 
-  GtkWidget *vbox = gtk_box_new(GTK_ORIENTATION_VERTICAL, 3);
-  gtk_widget_set_margin_top(vbox, 5);
-  gtk_widget_set_margin_bottom(vbox, 5);
-  gtk_widget_set_margin_start(vbox, 5);
-  gtk_widget_set_margin_end(vbox, 5);
-  gtk_frame_set_child(GTK_FRAME(frame), vbox);
+  QHBoxLayout *hbox_cash_bank = new QHBoxLayout();
+  hbox_cash_bank->setSpacing(130);
 
-  GtkWidget *hbox = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 130);
-  gtk_box_append(GTK_BOX(vbox), hbox);
+  QHBoxLayout *hbox_cash = new QHBoxLayout();
+  hbox_cash->setSpacing(20);
+  hbox_cash->addWidget(new QLabel("Cash:", frame_bank));
+  window_finance.label_cash = new QLabel("0", frame_bank);
+  hbox_cash->addWidget(window_finance.label_cash);
+  hbox_cash_bank->addLayout(hbox_cash);
 
-  GtkWidget *hbox2 = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 20);
-  gtk_box_append(GTK_BOX(hbox), hbox2);
+  QHBoxLayout *hbox_bank_val = new QHBoxLayout();
+  hbox_bank_val->setSpacing(20);
+  hbox_bank_val->addWidget(new QLabel("In Bank:", frame_bank));
+  window_finance.label_bank = new QLabel("0", frame_bank);
+  hbox_bank_val->addWidget(window_finance.label_bank);
+  hbox_cash_bank->addLayout(hbox_bank_val);
+  hbox_cash_bank->addStretch();
+  vbox_bank->addLayout(hbox_cash_bank);
 
-  GtkWidget *label = gtk_label_new("Cash:");
-  gtk_box_append(GTK_BOX(hbox2), label);
+  QGridLayout *grid_radios = new QGridLayout();
+  grid_radios->setHorizontalSpacing(3);
+  grid_radios->setVerticalSpacing(3);
 
-  window_finance.label_cash = gtk_label_new("0");
-  gtk_box_append(GTK_BOX(hbox2), window_finance.label_cash);
+  QButtonGroup *radio_group = new QButtonGroup(frame_bank);
+  window_finance.radiobutton_depositsome = new QRadioButton("Deposit some", frame_bank);
+  window_finance.radiobutton_depositall = new QRadioButton("Deposit all", frame_bank);
+  window_finance.radiobutton_depositallbut = new QRadioButton("Deposit all but", frame_bank);
+  window_finance.radiobutton_withdrawsome = new QRadioButton("Withdraw some", frame_bank);
+  window_finance.radiobutton_withdrawall = new QRadioButton("Withdraw all", frame_bank);
+  window_finance.radiobutton_withdrawallbut = new QRadioButton("Withdraw all but", frame_bank);
 
-  hbox2 = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 20);
-  gtk_box_append(GTK_BOX(hbox), hbox2);
+  radio_group->addButton(window_finance.radiobutton_depositsome);
+  radio_group->addButton(window_finance.radiobutton_depositall);
+  radio_group->addButton(window_finance.radiobutton_depositallbut);
+  radio_group->addButton(window_finance.radiobutton_withdrawsome);
+  radio_group->addButton(window_finance.radiobutton_withdrawall);
+  radio_group->addButton(window_finance.radiobutton_withdrawallbut);
+  window_finance.radiobutton_depositsome->setChecked(true);
 
-  label = gtk_label_new("In Bank:");
-  gtk_box_append(GTK_BOX(hbox2), label);
+  grid_radios->addWidget(window_finance.radiobutton_depositsome, 0, 0);
+  grid_radios->addWidget(window_finance.radiobutton_depositall, 0, 1);
+  grid_radios->addWidget(window_finance.radiobutton_depositallbut, 0, 2);
+  grid_radios->addWidget(window_finance.radiobutton_withdrawsome, 1, 0);
+  grid_radios->addWidget(window_finance.radiobutton_withdrawall, 1, 1);
+  grid_radios->addWidget(window_finance.radiobutton_withdrawallbut, 1, 2);
+  vbox_bank->addLayout(grid_radios);
 
-  window_finance.label_bank = gtk_label_new("0");
-  gtk_box_append(GTK_BOX(hbox2), window_finance.label_bank);
+  QHBoxLayout *hbox_amount = new QHBoxLayout();
+  hbox_amount->setSpacing(10);
+  hbox_amount->addWidget(new QLabel("Amount", frame_bank));
+  window_finance.spinbutton_amount = new QSpinBox(frame_bank);
+  window_finance.spinbutton_amount->setRange(1, 1000000000);
+  window_finance.spinbutton_amount->setValue(1);
+  hbox_amount->addWidget(window_finance.spinbutton_amount);
+  window_finance.button_doit = new QPushButton("Do it!", frame_bank);
+  hbox_amount->addWidget(window_finance.button_doit);
+  hbox_amount->addStretch();
+  vbox_bank->addLayout(hbox_amount);
 
-  GtkWidget *grid = gtk_grid_new();
-  gtk_grid_set_column_spacing(GTK_GRID(grid), 3);
-  gtk_grid_set_row_spacing(GTK_GRID(grid), 3);
-  gtk_box_append(GTK_BOX(vbox), grid);
+  vbox_main->addWidget(frame_bank);
 
-  window_finance.radiobutton_depositsome = gtk_check_button_new_with_label("Deposit some");
-  gtk_grid_attach(GTK_GRID(grid), window_finance.radiobutton_depositsome, 0, 0, 1, 1);
+  QGroupBox *frame_loans = new QGroupBox("Loans", window_finance.window);
+  QVBoxLayout *vbox_loans = new QVBoxLayout(frame_loans);
+  vbox_loans->setContentsMargins(5, 5, 5, 5);
+  vbox_loans->setSpacing(5);
 
-  window_finance.radiobutton_depositall = gtk_check_button_new_with_label("Deposit all");
-  gtk_check_button_set_group(GTK_CHECK_BUTTON(window_finance.radiobutton_depositall),
-                             GTK_CHECK_BUTTON(window_finance.radiobutton_depositsome));
-  gtk_grid_attach(GTK_GRID(grid), window_finance.radiobutton_depositall, 1, 0, 1, 1);
+  window_finance.treeview_loan = new QTreeWidget(frame_loans);
+  window_finance.treeview_loan->setRootIsDecorated(false);
+  window_finance.treeview_loan->setColumnCount(6);
+  window_finance.treeview_loan->setHeaderLabels({"Name", "Pays", "Rate", "Days", "Debt", "Days Left"});
+  for (int col = 0; col < 6; ++col) {
+    window_finance.treeview_loan->setColumnWidth(col, 70);
+    window_finance.treeview_loan->headerItem()->setTextAlignment(col, Qt::AlignRight | Qt::AlignVCenter);
+  }
+  window_finance.treeview_loan->setFixedHeight(170);
+  vbox_loans->addWidget(window_finance.treeview_loan);
 
-  window_finance.radiobutton_depositallbut = gtk_check_button_new_with_label("Deposit all but");
-  gtk_check_button_set_group(GTK_CHECK_BUTTON(window_finance.radiobutton_depositallbut),
-                             GTK_CHECK_BUTTON(window_finance.radiobutton_depositsome));
-  gtk_grid_attach(GTK_GRID(grid), window_finance.radiobutton_depositallbut, 2, 0, 1, 1);
+  QHBoxLayout *hbox_debt_actions = new QHBoxLayout();
+  hbox_debt_actions->setSpacing(0);
 
-  window_finance.radiobutton_withdrawsome = gtk_check_button_new_with_label("Withdraw some");
-  gtk_check_button_set_group(GTK_CHECK_BUTTON(window_finance.radiobutton_withdrawsome),
-                             GTK_CHECK_BUTTON(window_finance.radiobutton_depositsome));
-  gtk_grid_attach(GTK_GRID(grid), window_finance.radiobutton_withdrawsome, 0, 1, 1, 1);
+  QHBoxLayout *hbox_debt = new QHBoxLayout();
+  hbox_debt->setSpacing(20);
+  hbox_debt->addWidget(new QLabel("Debt:", frame_loans));
+  window_finance.label_debt = new QLabel("0", frame_loans);
+  hbox_debt->addWidget(window_finance.label_debt);
+  hbox_debt_actions->addLayout(hbox_debt);
 
-  window_finance.radiobutton_withdrawall = gtk_check_button_new_with_label("Withdraw all");
-  gtk_check_button_set_group(GTK_CHECK_BUTTON(window_finance.radiobutton_withdrawall),
-                             GTK_CHECK_BUTTON(window_finance.radiobutton_depositsome));
-  gtk_grid_attach(GTK_GRID(grid), window_finance.radiobutton_withdrawall, 1, 1, 1, 1);
+  hbox_debt_actions->addStretch();
 
-  window_finance.radiobutton_withdrawallbut = gtk_check_button_new_with_label("Withdraw all but");
-  gtk_check_button_set_group(GTK_CHECK_BUTTON(window_finance.radiobutton_withdrawallbut),
-                             GTK_CHECK_BUTTON(window_finance.radiobutton_depositsome));
-  gtk_grid_attach(GTK_GRID(grid), window_finance.radiobutton_withdrawallbut, 2, 1, 1, 1);
+  QHBoxLayout *hbox_borrow_repay = new QHBoxLayout();
+  hbox_borrow_repay->setSpacing(3);
+  window_finance.button_borrow = new QPushButton("Borrow", frame_loans);
+  hbox_borrow_repay->addWidget(window_finance.button_borrow);
+  window_finance.button_repay = new QPushButton("Repay", frame_loans);
+  hbox_borrow_repay->addWidget(window_finance.button_repay);
+  hbox_debt_actions->addLayout(hbox_borrow_repay);
 
-  hbox = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 10);
-  gtk_box_append(GTK_BOX(vbox), hbox);
+  vbox_loans->addLayout(hbox_debt_actions);
+  vbox_main->addWidget(frame_loans);
 
-  label = gtk_label_new("Amount");
-  gtk_box_append(GTK_BOX(hbox), label);
+  QHBoxLayout *hbox_done = new QHBoxLayout();
+  hbox_done->setSpacing(5);
+  hbox_done->addStretch();
+  window_finance.button_done = new QPushButton("Done", window_finance.window);
+  QObject::connect(window_finance.button_done, &QPushButton::clicked, window_finance.window, &QDialog::close);
+  hbox_done->addWidget(window_finance.button_done);
+  vbox_main->addLayout(hbox_done);
 
-  window_finance.spinbutton_amount = gtk_spin_button_new_with_range(1.0, 1000000000.0, 1.0);
-  gtk_box_append(GTK_BOX(hbox), window_finance.spinbutton_amount);
-
-  window_finance.button_doit = gtk_button_new_with_label("Do it!");
-  gtk_box_append(GTK_BOX(hbox), window_finance.button_doit);
-
-  frame = gtk_frame_new("Loans");
-  gtk_box_append(GTK_BOX(vbox_main), frame);
-
-  vbox = gtk_box_new(GTK_ORIENTATION_VERTICAL, 5);
-  gtk_widget_set_margin_top(vbox, 5);
-  gtk_widget_set_margin_bottom(vbox, 5);
-  gtk_widget_set_margin_start(vbox, 5);
-  gtk_widget_set_margin_end(vbox, 5);
-  gtk_frame_set_child(GTK_FRAME(frame), vbox);
-
-  GtkWidget *scrolled_window = gtk_scrolled_window_new();
-  gtk_scrolled_window_set_policy(GTK_SCROLLED_WINDOW(scrolled_window),
-                                 GTK_POLICY_NEVER,
-                                 GTK_POLICY_AUTOMATIC);
-  gtk_scrolled_window_set_has_frame(GTK_SCROLLED_WINDOW(scrolled_window), TRUE);
-  gtk_widget_set_size_request(scrolled_window, -1, 170);
-  gtk_box_append(GTK_BOX(vbox), scrolled_window);
-
-  GtkListStore *store = gtk_list_store_new(6, G_TYPE_STRING, G_TYPE_INT, G_TYPE_INT,
-                                          G_TYPE_INT, G_TYPE_INT, G_TYPE_INT);
-
-  window_finance.treeview_loan = gtk_tree_view_new_with_model(GTK_TREE_MODEL(store));
-  gtk_scrolled_window_set_child(GTK_SCROLLED_WINDOW(scrolled_window), window_finance.treeview_loan);
-
-  GtkCellRenderer *renderer = gtk_cell_renderer_text_new();
-  gtk_cell_renderer_set_alignment(renderer, 0.9f, 0.5f);
-  GtkTreeViewColumn *column = gtk_tree_view_column_new_with_attributes(
-      "Name", renderer, "text", COLUMN_LOAN_NAME, nullptr);
-  gtk_tree_view_column_set_sizing(column, GTK_TREE_VIEW_COLUMN_FIXED);
-  gtk_tree_view_column_set_min_width(column, 70);
-  gtk_tree_view_append_column(GTK_TREE_VIEW(window_finance.treeview_loan), column);
-
-  renderer = gtk_cell_renderer_text_new();
-  gtk_cell_renderer_set_alignment(renderer, 0.9f, 0.5f);
-  column = gtk_tree_view_column_new_with_attributes(
-      "Pays", renderer, "text", COLUMN_LOAN_PAY, nullptr);
-  gtk_tree_view_column_set_sizing(column, GTK_TREE_VIEW_COLUMN_FIXED);
-  gtk_tree_view_column_set_min_width(column, 70);
-  gtk_tree_view_append_column(GTK_TREE_VIEW(window_finance.treeview_loan), column);
-
-  renderer = gtk_cell_renderer_text_new();
-  gtk_cell_renderer_set_alignment(renderer, 0.9f, 0.5f);
-  column = gtk_tree_view_column_new_with_attributes(
-      "Rate", renderer, "text", COLUMN_LOAN_RATE, nullptr);
-  gtk_tree_view_column_set_sizing(column, GTK_TREE_VIEW_COLUMN_FIXED);
-  gtk_tree_view_column_set_min_width(column, 70);
-  gtk_tree_view_append_column(GTK_TREE_VIEW(window_finance.treeview_loan), column);
-
-  renderer = gtk_cell_renderer_text_new();
-  gtk_cell_renderer_set_alignment(renderer, 0.9f, 0.5f);
-  column = gtk_tree_view_column_new_with_attributes(
-      "Days", renderer, "text", COLUMN_LOAN_DAY, nullptr);
-  gtk_tree_view_column_set_sizing(column, GTK_TREE_VIEW_COLUMN_FIXED);
-  gtk_tree_view_column_set_min_width(column, 70);
-  gtk_tree_view_append_column(GTK_TREE_VIEW(window_finance.treeview_loan), column);
-
-  renderer = gtk_cell_renderer_text_new();
-  gtk_cell_renderer_set_alignment(renderer, 0.9f, 0.5f);
-  column = gtk_tree_view_column_new_with_attributes(
-      "Debt", renderer, "text", COLUMN_LOAN_DEBT, nullptr);
-  gtk_tree_view_column_set_sizing(column, GTK_TREE_VIEW_COLUMN_FIXED);
-  gtk_tree_view_column_set_min_width(column, 70);
-  gtk_tree_view_append_column(GTK_TREE_VIEW(window_finance.treeview_loan), column);
-
-  renderer = gtk_cell_renderer_text_new();
-  gtk_cell_renderer_set_alignment(renderer, 0.9f, 0.5f);
-  column = gtk_tree_view_column_new_with_attributes(
-      "Days Left", renderer, "text", COLUMN_LOAN_DAYLEFT, nullptr);
-  gtk_tree_view_column_set_sizing(column, GTK_TREE_VIEW_COLUMN_FIXED);
-  gtk_tree_view_column_set_min_width(column, 70);
-  gtk_tree_view_append_column(GTK_TREE_VIEW(window_finance.treeview_loan), column);
-
-  hbox = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 0);
-  gtk_box_append(GTK_BOX(vbox), hbox);
-
-  hbox2 = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 20);
-  gtk_box_append(GTK_BOX(hbox), hbox2);
-
-  label = gtk_label_new("Debt:");
-  gtk_box_append(GTK_BOX(hbox2), label);
-
-  window_finance.label_debt = gtk_label_new("0");
-  gtk_box_append(GTK_BOX(hbox2), window_finance.label_debt);
-
-  hbox2 = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 3);
-  gtk_box_append(GTK_BOX(hbox), hbox2);
-
-  window_finance.button_borrow = gtk_button_new_with_label("Borrow");
-  gtk_box_append(GTK_BOX(hbox2), window_finance.button_borrow);
-
-  window_finance.button_repay = gtk_button_new_with_label("Repay");
-  gtk_box_append(GTK_BOX(hbox2), window_finance.button_repay);
-
-  hbox = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 5);
-  gtk_widget_set_halign(hbox, GTK_ALIGN_END);
-  gtk_box_append(GTK_BOX(vbox_main), hbox);
-
-  window_finance.button_done = gtk_button_new_with_label("Done");
-  gtk_box_append(GTK_BOX(hbox), window_finance.button_done);
-  g_signal_connect_swapped(window_finance.button_done, "clicked",
-                            G_CALLBACK(gtk_window_destroy), window_finance.window);
+  window_finance.window->layout()->setSizeConstraint(QLayout::SetFixedSize);
 }
 
 void create_window_shopping() {
-  window_shopping.window = gtk_window_new();
-  gtk_window_set_title(GTK_WINDOW(window_shopping.window), "Shopping");
-  gtk_window_set_transient_for(GTK_WINDOW(window_shopping.window),
-                                GTK_WINDOW(window_main.window));
-  gtk_window_set_modal(GTK_WINDOW(window_shopping.window), TRUE);
-  gtk_window_set_resizable(GTK_WINDOW(window_shopping.window), FALSE);
-  g_signal_connect_swapped(window_shopping.window, "close-request",
-                            G_CALLBACK(gtk_window_destroy), window_shopping.window);
+  if (window_shopping.window) {
+    delete window_shopping.window;
+  }
+  window_shopping.window = new QDialog(window_main.window);
+  window_shopping.window->setWindowTitle("Shopping");
+  window_shopping.window->setModal(true);
 
-  GtkWidget *vbox_main = gtk_box_new(GTK_ORIENTATION_VERTICAL, 5);
-  gtk_widget_set_margin_top(vbox_main, 5);
-  gtk_widget_set_margin_bottom(vbox_main, 5);
-  gtk_widget_set_margin_start(vbox_main, 5);
-  gtk_widget_set_margin_end(vbox_main, 5);
-  gtk_window_set_child(GTK_WINDOW(window_shopping.window), vbox_main);
+  QVBoxLayout *vbox_main = new QVBoxLayout(window_shopping.window);
+  vbox_main->setContentsMargins(5, 5, 5, 5);
+  vbox_main->setSpacing(5);
 
-  GtkWidget *frame = gtk_frame_new("Store's Inventory");
-  gtk_box_append(GTK_BOX(vbox_main), frame);
+  QGroupBox *frame_store = new QGroupBox("Store's Inventory", window_shopping.window);
+  QVBoxLayout *vbox_store = new QVBoxLayout(frame_store);
+  vbox_store->setContentsMargins(5, 5, 5, 5);
+  vbox_store->setSpacing(5);
 
-  GtkWidget *vbox = gtk_box_new(GTK_ORIENTATION_VERTICAL, 5);
-  gtk_widget_set_margin_top(vbox, 5);
-  gtk_widget_set_margin_bottom(vbox, 5);
-  gtk_widget_set_margin_start(vbox, 5);
-  gtk_widget_set_margin_end(vbox, 5);
-  gtk_frame_set_child(GTK_FRAME(frame), vbox);
+  window_shopping.treeview_store = new QTreeWidget(frame_store);
+  window_shopping.treeview_store->setRootIsDecorated(false);
+  window_shopping.treeview_store->setColumnCount(3);
+  window_shopping.treeview_store->setHeaderLabels({"Name", "Type", "Price"});
+  window_shopping.treeview_store->setColumnWidth(COLUMN_STORE_NAME, 140);
+  window_shopping.treeview_store->setColumnWidth(COLUMN_STORE_TYPE, 100);
+  window_shopping.treeview_store->setColumnWidth(COLUMN_STORE_PRICE, 70);
+  window_shopping.treeview_store->headerItem()->setTextAlignment(COLUMN_STORE_NAME, Qt::AlignRight | Qt::AlignVCenter);
+  window_shopping.treeview_store->headerItem()->setTextAlignment(COLUMN_STORE_TYPE, Qt::AlignRight | Qt::AlignVCenter);
+  window_shopping.treeview_store->headerItem()->setTextAlignment(COLUMN_STORE_PRICE, Qt::AlignRight | Qt::AlignVCenter);
+  window_shopping.treeview_store->setFixedHeight(220);
+  vbox_store->addWidget(window_shopping.treeview_store);
 
-  GtkWidget *scrolled_window = gtk_scrolled_window_new();
-  gtk_scrolled_window_set_policy(GTK_SCROLLED_WINDOW(scrolled_window),
-                                 GTK_POLICY_NEVER,
-                                 GTK_POLICY_AUTOMATIC);
-  gtk_scrolled_window_set_has_frame(GTK_SCROLLED_WINDOW(scrolled_window), TRUE);
-  gtk_widget_set_size_request(scrolled_window, -1, 220);
-  gtk_box_append(GTK_BOX(vbox), scrolled_window);
+  QHBoxLayout *hbox_buy = new QHBoxLayout();
+  hbox_buy->addStretch();
+  window_shopping.button_buy = new QPushButton("   Buy   ", frame_store);
+  hbox_buy->addWidget(window_shopping.button_buy);
+  vbox_store->addLayout(hbox_buy);
 
-  GtkListStore *store = gtk_list_store_new(3, G_TYPE_STRING, G_TYPE_STRING, G_TYPE_INT);
-  window_shopping.treeview_store = gtk_tree_view_new_with_model(GTK_TREE_MODEL(store));
-  gtk_scrolled_window_set_child(GTK_SCROLLED_WINDOW(scrolled_window), window_shopping.treeview_store);
+  vbox_main->addWidget(frame_store);
 
-  GtkCellRenderer *renderer = gtk_cell_renderer_text_new();
-  gtk_cell_renderer_set_alignment(renderer, 0.9f, 0.5f);
-  GtkTreeViewColumn *column = gtk_tree_view_column_new_with_attributes(
-      "Name", renderer, "text", COLUMN_STORE_NAME, nullptr);
-  gtk_tree_view_column_set_sizing(column, GTK_TREE_VIEW_COLUMN_FIXED);
-  gtk_tree_view_column_set_min_width(column, 140);
-  gtk_tree_view_append_column(GTK_TREE_VIEW(window_shopping.treeview_store), column);
+  QGroupBox *frame_inv = new QGroupBox("Your Inventory", window_shopping.window);
+  QVBoxLayout *vbox_inv = new QVBoxLayout(frame_inv);
+  vbox_inv->setContentsMargins(5, 5, 5, 5);
+  vbox_inv->setSpacing(5);
 
-  renderer = gtk_cell_renderer_text_new();
-  gtk_cell_renderer_set_alignment(renderer, 0.9f, 0.5f);
-  column = gtk_tree_view_column_new_with_attributes(
-      "Type", renderer, "text", COLUMN_STORE_TYPE, nullptr);
-  gtk_tree_view_column_set_sizing(column, GTK_TREE_VIEW_COLUMN_FIXED);
-  gtk_tree_view_column_set_min_width(column, 100);
-  gtk_tree_view_append_column(GTK_TREE_VIEW(window_shopping.treeview_store), column);
+  window_shopping.treeview_inventory = new QTreeWidget(frame_inv);
+  window_shopping.treeview_inventory->setRootIsDecorated(false);
+  window_shopping.treeview_inventory->setColumnCount(4);
+  window_shopping.treeview_inventory->setHeaderLabels({"Name", "Type", "Qty", "Price"});
+  window_shopping.treeview_inventory->setColumnWidth(COLUMN_INVENTORY_NAME, 140);
+  window_shopping.treeview_inventory->setColumnWidth(COLUMN_INVENTORY_TYPE, 100);
+  window_shopping.treeview_inventory->setColumnWidth(COLUMN_INVENTORY_QTY, 70);
+  window_shopping.treeview_inventory->setColumnWidth(COLUMN_INVENTORY_SELLFOR, 70);
+  for (int col = 0; col < 4; ++col) {
+    window_shopping.treeview_inventory->headerItem()->setTextAlignment(col, Qt::AlignRight | Qt::AlignVCenter);
+  }
+  window_shopping.treeview_inventory->setFixedHeight(150);
+  vbox_inv->addWidget(window_shopping.treeview_inventory);
 
-  renderer = gtk_cell_renderer_text_new();
-  gtk_cell_renderer_set_alignment(renderer, 0.9f, 0.5f);
-  column = gtk_tree_view_column_new_with_attributes(
-      "Price", renderer, "text", COLUMN_STORE_PRICE, nullptr);
-  gtk_tree_view_column_set_sizing(column, GTK_TREE_VIEW_COLUMN_FIXED);
-  gtk_tree_view_column_set_min_width(column, 70);
-  gtk_tree_view_append_column(GTK_TREE_VIEW(window_shopping.treeview_store), column);
+  QHBoxLayout *hbox_sell_cash = new QHBoxLayout();
+  hbox_sell_cash->setSpacing(0);
 
-  GtkWidget *hbox = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 0);
-  gtk_box_append(GTK_BOX(vbox), hbox);
+  QHBoxLayout *hbox_cash = new QHBoxLayout();
+  hbox_cash->setSpacing(20);
+  hbox_cash->addWidget(new QLabel("Cash:", frame_inv));
+  window_shopping.label_cash = new QLabel("0", frame_inv);
+  hbox_cash->addWidget(window_shopping.label_cash);
+  hbox_sell_cash->addLayout(hbox_cash);
 
-  window_shopping.button_buy = gtk_button_new_with_label("   Buy   ");
-  gtk_widget_set_halign(window_shopping.button_buy, GTK_ALIGN_END);
-  gtk_widget_set_hexpand(window_shopping.button_buy, TRUE);
-  gtk_box_append(GTK_BOX(hbox), window_shopping.button_buy);
+  hbox_sell_cash->addStretch();
 
-  frame = gtk_frame_new("Your Inventory");
-  gtk_box_append(GTK_BOX(vbox_main), frame);
+  window_shopping.button_sell = new QPushButton("   Sell   ", frame_inv);
+  hbox_sell_cash->addWidget(window_shopping.button_sell);
+  vbox_inv->addLayout(hbox_sell_cash);
 
-  vbox = gtk_box_new(GTK_ORIENTATION_VERTICAL, 5);
-  gtk_widget_set_margin_top(vbox, 5);
-  gtk_widget_set_margin_bottom(vbox, 5);
-  gtk_widget_set_margin_start(vbox, 5);
-  gtk_widget_set_margin_end(vbox, 5);
-  gtk_frame_set_child(GTK_FRAME(frame), vbox);
+  vbox_main->addWidget(frame_inv);
 
-  scrolled_window = gtk_scrolled_window_new();
-  gtk_scrolled_window_set_policy(GTK_SCROLLED_WINDOW(scrolled_window),
-                                 GTK_POLICY_NEVER,
-                                 GTK_POLICY_AUTOMATIC);
-  gtk_scrolled_window_set_has_frame(GTK_SCROLLED_WINDOW(scrolled_window), TRUE);
-  gtk_widget_set_size_request(scrolled_window, -1, 150);
-  gtk_box_append(GTK_BOX(vbox), scrolled_window);
+  QHBoxLayout *hbox_done = new QHBoxLayout();
+  hbox_done->setSpacing(5);
+  hbox_done->addStretch();
+  window_shopping.button_done = new QPushButton("Done", window_shopping.window);
+  QObject::connect(window_shopping.button_done, &QPushButton::clicked, window_shopping.window, &QDialog::close);
+  hbox_done->addWidget(window_shopping.button_done);
+  vbox_main->addLayout(hbox_done);
 
-  store = gtk_list_store_new(4, G_TYPE_STRING, G_TYPE_STRING, G_TYPE_INT, G_TYPE_INT);
-  window_shopping.treeview_inventory = gtk_tree_view_new_with_model(GTK_TREE_MODEL(store));
-  gtk_scrolled_window_set_child(GTK_SCROLLED_WINDOW(scrolled_window), window_shopping.treeview_inventory);
-
-  renderer = gtk_cell_renderer_text_new();
-  gtk_cell_renderer_set_alignment(renderer, 0.9f, 0.5f);
-  column = gtk_tree_view_column_new_with_attributes(
-      "Name", renderer, "text", COLUMN_INVENTORY_NAME, nullptr);
-  gtk_tree_view_column_set_sizing(column, GTK_TREE_VIEW_COLUMN_FIXED);
-  gtk_tree_view_column_set_min_width(column, 140);
-  gtk_tree_view_append_column(GTK_TREE_VIEW(window_shopping.treeview_inventory), column);
-
-  renderer = gtk_cell_renderer_text_new();
-  gtk_cell_renderer_set_alignment(renderer, 0.9f, 0.5f);
-  column = gtk_tree_view_column_new_with_attributes(
-      "Type", renderer, "text", COLUMN_INVENTORY_TYPE, nullptr);
-  gtk_tree_view_column_set_sizing(column, GTK_TREE_VIEW_COLUMN_FIXED);
-  gtk_tree_view_column_set_min_width(column, 100);
-  gtk_tree_view_append_column(GTK_TREE_VIEW(window_shopping.treeview_inventory), column);
-
-  renderer = gtk_cell_renderer_text_new();
-  gtk_cell_renderer_set_alignment(renderer, 0.9f, 0.5f);
-  column = gtk_tree_view_column_new_with_attributes(
-      "Qty", renderer, "text", COLUMN_INVENTORY_QTY, nullptr);
-  gtk_tree_view_column_set_sizing(column, GTK_TREE_VIEW_COLUMN_FIXED);
-  gtk_tree_view_column_set_min_width(column, 70);
-  gtk_tree_view_append_column(GTK_TREE_VIEW(window_shopping.treeview_inventory), column);
-
-  renderer = gtk_cell_renderer_text_new();
-  gtk_cell_renderer_set_alignment(renderer, 0.9f, 0.5f);
-  column = gtk_tree_view_column_new_with_attributes(
-      "Price", renderer, "text", COLUMN_INVENTORY_SELLFOR, nullptr);
-  gtk_tree_view_column_set_sizing(column, GTK_TREE_VIEW_COLUMN_FIXED);
-  gtk_tree_view_column_set_min_width(column, 70);
-  gtk_tree_view_append_column(GTK_TREE_VIEW(window_shopping.treeview_inventory), column);
-
-  hbox = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 0);
-  gtk_box_append(GTK_BOX(vbox), hbox);
-
-  GtkWidget *hbox2 = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 20);
-  gtk_box_append(GTK_BOX(hbox), hbox2);
-
-  GtkWidget *label = gtk_label_new("Cash:");
-  gtk_box_append(GTK_BOX(hbox2), label);
-
-  window_shopping.label_cash = gtk_label_new("0");
-  gtk_box_append(GTK_BOX(hbox2), window_shopping.label_cash);
-
-  hbox2 = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 0);
-  gtk_widget_set_hexpand(hbox2, TRUE);
-  gtk_widget_set_halign(hbox2, GTK_ALIGN_END);
-  gtk_box_append(GTK_BOX(hbox), hbox2);
-
-  window_shopping.button_sell = gtk_button_new_with_label("   Sell   ");
-  gtk_box_append(GTK_BOX(hbox2), window_shopping.button_sell);
-
-  hbox = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 5);
-  gtk_widget_set_halign(hbox, GTK_ALIGN_END);
-  gtk_box_append(GTK_BOX(vbox_main), hbox);
-
-  window_shopping.button_done = gtk_button_new_with_label("Done");
-  gtk_box_append(GTK_BOX(hbox), window_shopping.button_done);
-  g_signal_connect_swapped(window_shopping.button_done, "clicked",
-                            G_CALLBACK(gtk_window_destroy), window_shopping.window);
+  window_shopping.window->layout()->setSizeConstraint(QLayout::SetFixedSize);
 }
 
 void create_window_hospital() {
-  window_hospital.window = gtk_window_new();
-  gtk_window_set_title(GTK_WINDOW(window_hospital.window), "Hospital");
-  gtk_window_set_transient_for(GTK_WINDOW(window_hospital.window),
-                                GTK_WINDOW(window_main.window));
-  gtk_window_set_modal(GTK_WINDOW(window_hospital.window), TRUE);
-  gtk_window_set_resizable(GTK_WINDOW(window_hospital.window), FALSE);
-  g_signal_connect_swapped(window_hospital.window, "close-request",
-                            G_CALLBACK(gtk_window_destroy), window_hospital.window);
+  if (window_hospital.window) {
+    delete window_hospital.window;
+  }
+  window_hospital.window = new QDialog(window_main.window);
+  window_hospital.window->setWindowTitle("Hospital");
+  window_hospital.window->setModal(true);
 
-  GtkWidget *vbox_main = gtk_box_new(GTK_ORIENTATION_VERTICAL, 5);
-  gtk_widget_set_margin_top(vbox_main, 5);
-  gtk_widget_set_margin_bottom(vbox_main, 5);
-  gtk_widget_set_margin_start(vbox_main, 5);
-  gtk_widget_set_margin_end(vbox_main, 5);
-  gtk_window_set_child(GTK_WINDOW(window_hospital.window), vbox_main);
+  QVBoxLayout *vbox_main = new QVBoxLayout(window_hospital.window);
+  vbox_main->setContentsMargins(5, 5, 5, 5);
+  vbox_main->setSpacing(5);
 
-  GtkWidget *hbox = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 5);
-  gtk_box_append(GTK_BOX(vbox_main), hbox);
+  QHBoxLayout *hbox_top = new QHBoxLayout();
+  hbox_top->setSpacing(5);
 
-  GtkWidget *frame = gtk_frame_new("");
-  gtk_box_append(GTK_BOX(hbox), frame);
+  QGroupBox *frame_icon = new QGroupBox("", window_hospital.window);
+  QHBoxLayout *hbox_icon = new QHBoxLayout(frame_icon);
+  hbox_icon->setContentsMargins(20, 20, 20, 20);
+  QLabel *image_icon = new QLabel(frame_icon);
+  image_icon->setPixmap(window_hospital.window->style()->standardIcon(QStyle::SP_MessageBoxInformation).pixmap(48, 48));
+  hbox_icon->addWidget(image_icon);
+  hbox_top->addWidget(frame_icon);
 
-  GtkWidget *hbox2 = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 0);
-  gtk_widget_set_margin_top(hbox2, 20);
-  gtk_widget_set_margin_bottom(hbox2, 20);
-  gtk_widget_set_margin_start(hbox2, 20);
-  gtk_widget_set_margin_end(hbox2, 20);
-  gtk_frame_set_child(GTK_FRAME(frame), hbox2);
+  QGroupBox *frame_slider = new QGroupBox("Move the pointer to desired health", window_hospital.window);
+  frame_slider->setFixedWidth(400);
+  QVBoxLayout *vbox_slider = new QVBoxLayout(frame_slider);
+  vbox_slider->setContentsMargins(5, 5, 5, 5);
+  vbox_slider->setSpacing(10);
 
-  GtkWidget *image = gtk_image_new_from_icon_name("help-browser");
-  gtk_image_set_pixel_size(GTK_IMAGE(image), 48);
-  gtk_box_append(GTK_BOX(hbox2), image);
+  QVBoxLayout *vbox_bars = new QVBoxLayout();
+  vbox_bars->setSpacing(3);
+  window_hospital.progressbar_health = new QProgressBar(frame_slider);
+  window_hospital.progressbar_health->setRange(0, 100);
+  window_hospital.progressbar_health->setValue(100);
+  window_hospital.progressbar_health->setTextVisible(false);
+  vbox_bars->addWidget(window_hospital.progressbar_health);
 
-  frame = gtk_frame_new("Move the pointer to desired health");
-  gtk_widget_set_size_request(frame, 400, -1);
-  gtk_box_append(GTK_BOX(hbox), frame);
+  window_hospital.scalebutton_health = new QSlider(Qt::Horizontal, frame_slider);
+  window_hospital.scalebutton_health->setRange(1, 100);
+  window_hospital.scalebutton_health->setValue(100);
+  vbox_bars->addWidget(window_hospital.scalebutton_health);
+  vbox_slider->addLayout(vbox_bars);
 
-  GtkWidget *vbox = gtk_box_new(GTK_ORIENTATION_VERTICAL, 10);
-  gtk_widget_set_margin_top(vbox, 5);
-  gtk_widget_set_margin_bottom(vbox, 5);
-  gtk_widget_set_margin_start(vbox, 5);
-  gtk_widget_set_margin_end(vbox, 5);
-  gtk_frame_set_child(GTK_FRAME(frame), vbox);
+  QGridLayout *grid_labels = new QGridLayout();
+  grid_labels->setHorizontalSpacing(10);
+  grid_labels->setVerticalSpacing(3);
 
-  GtkWidget *vbox2 = gtk_box_new(GTK_ORIENTATION_VERTICAL, 3);
-  gtk_box_append(GTK_BOX(vbox), vbox2);
+  QLabel *label_cash_title = new QLabel("Cash:", frame_slider);
+  grid_labels->addWidget(label_cash_title, 0, 0, Qt::AlignRight);
+  window_hospital.label_cash = new QLabel("0", frame_slider);
+  grid_labels->addWidget(window_hospital.label_cash, 0, 1, Qt::AlignLeft);
 
-  window_hospital.progressbar_health = gtk_progress_bar_new();
-  gtk_box_append(GTK_BOX(vbox2), window_hospital.progressbar_health);
+  QLabel *label_cost_title = new QLabel("Cost for treatment:", frame_slider);
+  grid_labels->addWidget(label_cost_title, 1, 0, Qt::AlignRight);
+  window_hospital.label_cost = new QLabel("0", frame_slider);
+  grid_labels->addWidget(window_hospital.label_cost, 1, 1, Qt::AlignLeft);
+  vbox_slider->addLayout(grid_labels);
 
-  window_hospital.scalebutton_health = gtk_scale_new_with_range(GTK_ORIENTATION_HORIZONTAL, 1.0, 100.0, 1.0);
-  gtk_scale_set_draw_value(GTK_SCALE(window_hospital.scalebutton_health), FALSE);
-  gtk_box_append(GTK_BOX(vbox2), window_hospital.scalebutton_health);
+  hbox_top->addWidget(frame_slider);
+  vbox_main->addLayout(hbox_top);
 
-  vbox2 = gtk_box_new(GTK_ORIENTATION_VERTICAL, 3);
-  gtk_box_append(GTK_BOX(vbox), vbox2);
+  QHBoxLayout *hbox_buttons = new QHBoxLayout();
+  hbox_buttons->setSpacing(3);
+  hbox_buttons->addStretch();
 
-  GtkWidget *grid = gtk_grid_new();
-  gtk_grid_set_column_spacing(GTK_GRID(grid), 10);
-  gtk_grid_set_row_spacing(GTK_GRID(grid), 3);
-  gtk_box_append(GTK_BOX(vbox2), grid);
+  window_hospital.button_ok = new QPushButton("&OK", window_hospital.window);
+  hbox_buttons->addWidget(window_hospital.button_ok);
 
-  GtkWidget *label = gtk_label_new("Cash:");
-  gtk_label_set_xalign(GTK_LABEL(label), 1.0f);
-  gtk_grid_attach(GTK_GRID(grid), label, 0, 0, 1, 1);
+  QPushButton *button_cancel = new QPushButton("&Cancel", window_hospital.window);
+  QObject::connect(button_cancel, &QPushButton::clicked, window_hospital.window, &QDialog::close);
+  hbox_buttons->addWidget(button_cancel);
 
-  window_hospital.label_cash = gtk_label_new("0");
-  gtk_grid_attach(GTK_GRID(grid), window_hospital.label_cash, 1, 0, 1, 1);
+  vbox_main->addLayout(hbox_buttons);
 
-  label = gtk_label_new("Cost for treatment:");
-  gtk_label_set_xalign(GTK_LABEL(label), 1.0f);
-  gtk_grid_attach(GTK_GRID(grid), label, 0, 1, 1, 1);
-
-  window_hospital.label_cost = gtk_label_new("0");
-  gtk_grid_attach(GTK_GRID(grid), window_hospital.label_cost, 1, 1, 1, 1);
-
-  hbox = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 3);
-  gtk_widget_set_halign(hbox, GTK_ALIGN_END);
-  gtk_box_append(GTK_BOX(vbox_main), hbox);
-
-  window_hospital.button_ok = gtk_button_new_with_mnemonic("_OK");
-  gtk_box_append(GTK_BOX(hbox), window_hospital.button_ok);
-
-  GtkWidget *button = gtk_button_new_with_mnemonic("_Cancel");
-  gtk_box_append(GTK_BOX(hbox), button);
-  g_signal_connect_swapped(button, "clicked",
-                            G_CALLBACK(gtk_window_destroy), window_hospital.window);
+  window_hospital.window->layout()->setSizeConstraint(QLayout::SetFixedSize);
 }
 
 void create_window_vault() {
-  window_vault.window = gtk_window_new();
-  gtk_window_set_title(GTK_WINDOW(window_vault.window), "The Vault");
-  gtk_window_set_transient_for(GTK_WINDOW(window_vault.window),
-                                GTK_WINDOW(window_main.window));
-  gtk_window_set_modal(GTK_WINDOW(window_vault.window), TRUE);
-  gtk_window_set_resizable(GTK_WINDOW(window_vault.window), FALSE);
-  g_signal_connect_swapped(window_vault.window, "close-request",
-                            G_CALLBACK(gtk_window_destroy), window_vault.window);
-
-  GtkWidget *vbox_main = gtk_box_new(GTK_ORIENTATION_VERTICAL, 5);
-  gtk_widget_set_margin_top(vbox_main, 5);
-  gtk_widget_set_margin_bottom(vbox_main, 5);
-  gtk_widget_set_margin_start(vbox_main, 5);
-  gtk_widget_set_margin_end(vbox_main, 5);
-  gtk_window_set_child(GTK_WINDOW(window_vault.window), vbox_main);
-
-  GtkWidget *hbox = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 5);
-  gtk_box_append(GTK_BOX(vbox_main), hbox);
-
-  GtkWidget *frame = gtk_frame_new("You pants pocket (0/10)");
-  gtk_box_append(GTK_BOX(hbox), frame);
-
-  GtkWidget *scrolled_window = gtk_scrolled_window_new();
-  gtk_scrolled_window_set_policy(GTK_SCROLLED_WINDOW(scrolled_window),
-                                 GTK_POLICY_NEVER,
-                                 GTK_POLICY_AUTOMATIC);
-  gtk_scrolled_window_set_has_frame(GTK_SCROLLED_WINDOW(scrolled_window), TRUE);
-  gtk_widget_set_size_request(scrolled_window, -1, 200);
-  gtk_widget_set_margin_top(scrolled_window, 5);
-  gtk_widget_set_margin_bottom(scrolled_window, 5);
-  gtk_widget_set_margin_start(scrolled_window, 5);
-  gtk_widget_set_margin_end(scrolled_window, 5);
-  gtk_frame_set_child(GTK_FRAME(frame), scrolled_window);
-
-  window_vault.treeview_pocket = create_treeview_drug(FALSE);
-  gtk_scrolled_window_set_child(GTK_SCROLLED_WINDOW(scrolled_window), window_vault.treeview_pocket);
-
-  frame = gtk_frame_new("Move");
-  gtk_box_append(GTK_BOX(hbox), frame);
-
-  GtkWidget *vbox = gtk_box_new(GTK_ORIENTATION_VERTICAL, 3);
-  gtk_widget_set_margin_top(vbox, 5);
-  gtk_widget_set_margin_bottom(vbox, 5);
-  gtk_widget_set_margin_start(vbox, 5);
-  gtk_widget_set_margin_end(vbox, 5);
-  gtk_frame_set_child(GTK_FRAME(frame), vbox);
-
-  window_vault.button_intovault = gtk_button_new_with_label("Into Vault \u2192");
-  gtk_box_append(GTK_BOX(vbox), window_vault.button_intovault);
-
-  window_vault.button_fromvault = gtk_button_new_with_label("\u2190 From Vault");
-  gtk_box_append(GTK_BOX(vbox), window_vault.button_fromvault);
-
-  frame = gtk_frame_new("In the Vault");
-  gtk_box_append(GTK_BOX(hbox), frame);
-
-  scrolled_window = gtk_scrolled_window_new();
-  gtk_scrolled_window_set_policy(GTK_SCROLLED_WINDOW(scrolled_window),
-                                 GTK_POLICY_NEVER,
-                                 GTK_POLICY_AUTOMATIC);
-  gtk_scrolled_window_set_has_frame(GTK_SCROLLED_WINDOW(scrolled_window), TRUE);
-  gtk_widget_set_size_request(scrolled_window, -1, 210);
-  gtk_widget_set_margin_top(scrolled_window, 5);
-  gtk_widget_set_margin_bottom(scrolled_window, 5);
-  gtk_widget_set_margin_start(scrolled_window, 5);
-  gtk_widget_set_margin_end(scrolled_window, 5);
-  gtk_frame_set_child(GTK_FRAME(frame), scrolled_window);
-
-  window_vault.treeview_vault = create_treeview_drug(FALSE);
-  gtk_scrolled_window_set_child(GTK_SCROLLED_WINDOW(scrolled_window), window_vault.treeview_vault);
-
-  hbox = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 3);
-  gtk_widget_set_halign(hbox, GTK_ALIGN_END);
-  gtk_box_append(GTK_BOX(vbox_main), hbox);
-
-  window_vault.button_ok = gtk_button_new_with_mnemonic("_OK");
-  gtk_box_append(GTK_BOX(hbox), window_vault.button_ok);
-
-  GtkWidget *button = gtk_button_new_with_mnemonic("_Cancel");
-  gtk_box_append(GTK_BOX(hbox), button);
-  g_signal_connect_swapped(button, "clicked",
-                            G_CALLBACK(gtk_window_destroy), window_vault.window);
-}
-
-void create_window_input(const gchar *title,
-                         const gchar *message,
-                         const gchar *question) {
-  window_input.window = gtk_window_new();
-  gtk_window_set_title(GTK_WINDOW(window_input.window), title);
-  gtk_window_set_transient_for(GTK_WINDOW(window_input.window),
-                                GTK_WINDOW(window_main.window));
-  gtk_window_set_modal(GTK_WINDOW(window_input.window), TRUE);
-  gtk_window_set_resizable(GTK_WINDOW(window_input.window), FALSE);
-  g_signal_connect_swapped(window_input.window, "close-request",
-                            G_CALLBACK(gtk_window_destroy), window_input.window);
-
-  GtkWidget *vbox_main = gtk_box_new(GTK_ORIENTATION_VERTICAL, 5);
-  gtk_widget_set_margin_top(vbox_main, 5);
-  gtk_widget_set_margin_bottom(vbox_main, 5);
-  gtk_widget_set_margin_start(vbox_main, 5);
-  gtk_widget_set_margin_end(vbox_main, 5);
-  gtk_window_set_child(GTK_WINDOW(window_input.window), vbox_main);
-
-  GtkWidget *frame = gtk_frame_new("Message");
-  gtk_box_append(GTK_BOX(vbox_main), frame);
-
-  GtkWidget *hbox = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 0);
-  gtk_widget_set_margin_top(hbox, 5);
-  gtk_widget_set_margin_bottom(hbox, 5);
-  gtk_widget_set_margin_start(hbox, 5);
-  gtk_widget_set_margin_end(hbox, 5);
-  gtk_frame_set_child(GTK_FRAME(frame), hbox);
-
-  GtkWidget *label = gtk_label_new(message);
-  gtk_box_append(GTK_BOX(hbox), label);
-
-  frame = gtk_frame_new(nullptr);
-  gtk_box_append(GTK_BOX(vbox_main), frame);
-
-  hbox = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 5);
-  gtk_widget_set_margin_top(hbox, 5);
-  gtk_widget_set_margin_bottom(hbox, 5);
-  gtk_widget_set_margin_start(hbox, 5);
-  gtk_widget_set_margin_end(hbox, 5);
-  gtk_frame_set_child(GTK_FRAME(frame), hbox);
-
-  label = gtk_label_new(question);
-  gtk_label_set_xalign(GTK_LABEL(label), 1.0f);
-  gtk_widget_set_hexpand(label, TRUE);
-  gtk_box_append(GTK_BOX(hbox), label);
-
-  window_input.spinbutton_value = gtk_spin_button_new_with_range(1.0, 1000000.0, 1.0);
-  gtk_spin_button_set_digits(GTK_SPIN_BUTTON(window_input.spinbutton_value), 0);
-  gtk_box_append(GTK_BOX(hbox), window_input.spinbutton_value);
-
-  hbox = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 5);
-  gtk_widget_set_halign(hbox, GTK_ALIGN_END);
-  gtk_box_append(GTK_BOX(vbox_main), hbox);
-
-  window_input.button_ok = gtk_button_new_with_mnemonic("_OK");
-  gtk_box_append(GTK_BOX(hbox), window_input.button_ok);
-
-  GtkWidget *button = gtk_button_new_with_mnemonic("_Cancel");
-  gtk_box_append(GTK_BOX(hbox), button);
-  g_signal_connect_swapped(button, "clicked",
-                            G_CALLBACK(gtk_window_destroy), window_input.window);
-}
-
-GtkWidget* create_places_menu(GtkWidget *button) {
-  GtkWidget *popover = gtk_popover_new();
-  GtkWidget *box = gtk_box_new(GTK_ORIENTATION_VERTICAL, 2);
-  gtk_popover_set_child(GTK_POPOVER(popover), box);
-
-  struct MenuItemInfo {
-    const char *label;
-    GCallback cb;
-  };
-
-  const std::array<MenuItemInfo, 5> items = {{
-    {"Finances...", G_CALLBACK(menuitem_places_finances_activate_cb)},
-    {"Shopping...", G_CALLBACK(menuitem_places_shopping_activate_cb)},
-    {"Hospital...", G_CALLBACK(menuitem_places_hospital_activate_cb)},
-    {"Vault...", G_CALLBACK(menuitem_places_vault_activate_cb)},
-    {"Shipping...", G_CALLBACK(menuitem_places_shipping_activate_cb)},
-  }};
-
-  for (const auto &item : items) {
-    GtkWidget *btn = gtk_button_new_with_label(item.label);
-    gtk_button_set_has_frame(GTK_BUTTON(btn), FALSE);
-    g_signal_connect(btn, "clicked", item.cb, nullptr);
-    g_signal_connect_swapped(btn, "clicked", G_CALLBACK(gtk_popover_popdown), popover);
-    gtk_box_append(GTK_BOX(box), btn);
+  if (window_vault.window) {
+    delete window_vault.window;
   }
+  window_vault.window = new QDialog(window_main.window);
+  window_vault.window->setWindowTitle("The Vault");
+  window_vault.window->setModal(true);
 
-  gtk_menu_button_set_popover(GTK_MENU_BUTTON(button), popover);
-  return popover;
+  QVBoxLayout *vbox_main = new QVBoxLayout(window_vault.window);
+  vbox_main->setContentsMargins(5, 5, 5, 5);
+  vbox_main->setSpacing(5);
+
+  QHBoxLayout *hbox_middle = new QHBoxLayout();
+  hbox_middle->setSpacing(5);
+
+  QGroupBox *frame_pocket = new QGroupBox("You pants pocket (0/10)", window_vault.window);
+  QVBoxLayout *vbox_pocket = new QVBoxLayout(frame_pocket);
+  vbox_pocket->setContentsMargins(5, 5, 5, 5);
+  window_vault.treeview_pocket = create_treeview_drug(false);
+  window_vault.treeview_pocket->setFixedHeight(200);
+  vbox_pocket->addWidget(window_vault.treeview_pocket);
+  hbox_middle->addWidget(frame_pocket);
+
+  QGroupBox *frame_move = new QGroupBox("Move", window_vault.window);
+  QVBoxLayout *vbox_move = new QVBoxLayout(frame_move);
+  vbox_move->setContentsMargins(5, 5, 5, 5);
+  vbox_move->setSpacing(3);
+  window_vault.button_intovault = new QPushButton(QString::fromUtf8("Into Vault \u2192"), frame_move);
+  vbox_move->addWidget(window_vault.button_intovault);
+  window_vault.button_fromvault = new QPushButton(QString::fromUtf8("\u2190 From Vault"), frame_move);
+  vbox_move->addWidget(window_vault.button_fromvault);
+  vbox_move->addStretch();
+  hbox_middle->addWidget(frame_move);
+
+  QGroupBox *frame_vault = new QGroupBox("In the Vault", window_vault.window);
+  QVBoxLayout *vbox_vault = new QVBoxLayout(frame_vault);
+  vbox_vault->setContentsMargins(5, 5, 5, 5);
+  window_vault.treeview_vault = create_treeview_drug(false);
+  window_vault.treeview_vault->setFixedHeight(210);
+  vbox_vault->addWidget(window_vault.treeview_vault);
+  hbox_middle->addWidget(frame_vault);
+
+  vbox_main->addLayout(hbox_middle);
+
+  QHBoxLayout *hbox_buttons = new QHBoxLayout();
+  hbox_buttons->setSpacing(3);
+  hbox_buttons->addStretch();
+
+  window_vault.button_ok = new QPushButton("&OK", window_vault.window);
+  hbox_buttons->addWidget(window_vault.button_ok);
+
+  QPushButton *button_cancel = new QPushButton("&Cancel", window_vault.window);
+  QObject::connect(button_cancel, &QPushButton::clicked, window_vault.window, &QDialog::close);
+  hbox_buttons->addWidget(button_cancel);
+
+  vbox_main->addLayout(hbox_buttons);
+
+  window_vault.window->layout()->setSizeConstraint(QLayout::SetFixedSize);
 }
 
-GtkWidget* create_info_menu(GtkWidget *button) {
-  GtkWidget *popover = gtk_popover_new();
-  GtkWidget *box = gtk_box_new(GTK_ORIENTATION_VERTICAL, 2);
-  gtk_popover_set_child(GTK_POPOVER(popover), box);
-
-  struct MenuItemInfo {
-    const char *label;
-    GCallback cb;
-  };
-
-  const std::array<MenuItemInfo, 5> items = {{
-    {"Vaults...", G_CALLBACK(menuitem_info_vaults_activate_cb)},
-    {"World Drug Prices...", G_CALLBACK(menuitem_info_drug_prices_activate_cb)},
-    {"World Cities...", G_CALLBACK(menuitem_info_world_cities_activate_cb)},
-    {"Shipment Status...", G_CALLBACK(menuitem_info_shipment_status_activate_cb)},
-    {"History...", G_CALLBACK(menuitem_info_history_activate_cb)},
-  }};
-
-  for (const auto &item : items) {
-    GtkWidget *btn = gtk_button_new_with_label(item.label);
-    gtk_button_set_has_frame(GTK_BUTTON(btn), FALSE);
-    g_signal_connect(btn, "clicked", item.cb, nullptr);
-    g_signal_connect_swapped(btn, "clicked", G_CALLBACK(gtk_popover_popdown), popover);
-    gtk_box_append(GTK_BOX(box), btn);
+void create_window_input(const char *title,
+                         const char *message,
+                         const char *question) {
+  if (window_input.window) {
+    delete window_input.window;
   }
+  window_input.window = new QDialog(window_main.window);
+  window_input.window->setWindowTitle(QString::fromUtf8(title));
+  window_input.window->setModal(true);
 
-  gtk_menu_button_set_popover(GTK_MENU_BUTTON(button), popover);
-  return popover;
+  QVBoxLayout *vbox_main = new QVBoxLayout(window_input.window);
+  vbox_main->setContentsMargins(5, 5, 5, 5);
+  vbox_main->setSpacing(5);
+
+  QGroupBox *frame_msg = new QGroupBox("Message", window_input.window);
+  QHBoxLayout *hbox_msg = new QHBoxLayout(frame_msg);
+  hbox_msg->setContentsMargins(5, 5, 5, 5);
+  QLabel *label_msg = new QLabel(QString::fromUtf8(message), frame_msg);
+  hbox_msg->addWidget(label_msg);
+  vbox_main->addWidget(frame_msg);
+
+  QGroupBox *frame_input = new QGroupBox("", window_input.window);
+  QHBoxLayout *hbox_input = new QHBoxLayout(frame_input);
+  hbox_input->setContentsMargins(5, 5, 5, 5);
+  hbox_input->setSpacing(5);
+
+  QLabel *label_question = new QLabel(QString::fromUtf8(question), frame_input);
+  label_question->setAlignment(Qt::AlignRight | Qt::AlignVCenter);
+  label_question->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
+  hbox_input->addWidget(label_question);
+
+  window_input.spinbutton_value = new QSpinBox(frame_input);
+  window_input.spinbutton_value->setRange(1, 1000000);
+  window_input.spinbutton_value->setValue(1);
+  hbox_input->addWidget(window_input.spinbutton_value);
+  vbox_main->addWidget(frame_input);
+
+  QHBoxLayout *hbox_buttons = new QHBoxLayout();
+  hbox_buttons->setSpacing(5);
+  hbox_buttons->addStretch();
+
+  window_input.button_ok = new QPushButton("&OK", window_input.window);
+  hbox_buttons->addWidget(window_input.button_ok);
+
+  QPushButton *button_cancel = new QPushButton("&Cancel", window_input.window);
+  QObject::connect(button_cancel, &QPushButton::clicked, window_input.window, &QDialog::close);
+  hbox_buttons->addWidget(button_cancel);
+
+  vbox_main->addLayout(hbox_buttons);
+
+  window_input.window->layout()->setSizeConstraint(QLayout::SetFixedSize);
+}
+
+QMenu* create_places_menu(QPushButton *button) {
+  QMenu *menu = new QMenu(button);
+  menu->addAction("Finances...", []() { menuitem_places_finances_activate_cb(); });
+  menu->addAction("Shopping...", []() { menuitem_places_shopping_activate_cb(); });
+  menu->addAction("Hospital...", []() { menuitem_places_hospital_activate_cb(); });
+  menu->addAction("Vault...", []() { menuitem_places_vault_activate_cb(); });
+  menu->addAction("Shipping...", []() { menuitem_places_shipping_activate_cb(); });
+  button->setMenu(menu);
+  return menu;
+}
+
+QMenu* create_info_menu(QPushButton *button) {
+  QMenu *menu = new QMenu(button);
+  menu->addAction("Vaults...", []() { menuitem_info_vaults_activate_cb(); });
+  menu->addAction("World Drug Prices...", []() { menuitem_info_drug_prices_activate_cb(); });
+  menu->addAction("World Cities...", []() { menuitem_info_world_cities_activate_cb(); });
+  menu->addAction("Shipment Status...", []() { menuitem_info_shipment_status_activate_cb(); });
+  menu->addAction("History...", []() { menuitem_info_history_activate_cb(); });
+  button->setMenu(menu);
+  return menu;
 }
