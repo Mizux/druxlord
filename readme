@@ -12,7 +12,7 @@ and improve anything that looks cool to me.
 Build
 =====
 
-Consult your distribution for GTK+ development library, C compiler and CMake.
+Consult your distribution for GTK 4 development library, C++20 compiler and CMake.
 
 
 License

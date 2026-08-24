@@ -71,7 +71,7 @@ endif()
 
 # Dependencies
 find_package(PkgConfig REQUIRED)
-pkg_search_module(GTK REQUIRED IMPORTED_TARGET gtk+-3.0 gtk+-2.0)
+pkg_search_module(GTK REQUIRED IMPORTED_TARGET gtk4)
 
 # Disable CTest targets
 set_property(GLOBAL PROPERTY CTEST_TARGETS_ADDED 1)

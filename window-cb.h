@@ -3,10 +3,8 @@
 #include <gtk/gtk.h>
 
 extern "C" {
-gboolean window_main_window_delete_event_cb(GtkWidget *widget, GdkEvent *event, gpointer data);
+gboolean window_main_window_close_request_cb(GtkWindow *window, gpointer data);
 void window_main_button_buy_clicked_cb(GtkWidget *widget, gpointer data);
-void window_main_button_places_clicked_cb(GtkWidget *widget, gpointer data);
-void window_main_button_info_clicked_cb(GtkWidget *widget, gpointer data);
 void window_main_button_stayhere_clicked_cb(GtkWidget *widget, gpointer data);
 void menuitem_places_finances_activate_cb(GtkWidget *widget, gpointer data);
 void menuitem_places_shopping_activate_cb(GtkWidget *widget, gpointer data);

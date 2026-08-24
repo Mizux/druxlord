@@ -125,7 +125,7 @@ extern WindowHospital window_hospital;
 extern WindowVault window_vault;
 extern WindowInput window_input;
 
-void create_window_main();
+void create_window_main(GtkApplication *app = nullptr);
 void create_window_finance();
 void create_window_shopping();
 void create_window_hospital();
@@ -142,5 +142,5 @@ void set_label_rank(int rank);
 void set_label_cash(int value);
 void set_label_bank(int value);
 void set_label_debt(int value);
-GtkWidget* create_places_menu();
-GtkWidget* create_info_menu();
+GtkWidget* create_places_menu(GtkWidget *button);
+GtkWidget* create_info_menu(GtkWidget *button);
