@@ -1,13 +1,104 @@
-#ifndef __DRUXLORD_H__
-#define __DRUXLORD_H__
+#pragma once
 
 #include <glib.h>
+#include <array>
+#include <string>
 
-#define DRUG_NUM   17
-#define CITY_NUM   15
+inline constexpr int DRUG_NUM = 17;
+inline constexpr int CITY_NUM = 15;
+inline constexpr int WEAPON_NUM = 9;
+inline constexpr int COUNTRY_NUM = 7;
+inline constexpr int RANK_NUM = 6;
 
-typedef enum
-{
+enum class DrugType {
+  Cocaine,
+  Crack,
+  Ecstasy,
+  Hashish,
+  Heroin,
+  Ice,
+  Kat,
+  LSD,
+  MDA,
+  Morphine,
+  Mushrooms,
+  Opium,
+  PCP,
+  Peyote,
+  Pot,
+  SpecialK,
+  Speed
+};
+
+enum class WeaponType {
+  Knife,
+  Pistol,
+  Shotgun,
+  MachineGun,
+  Flamethrower,
+  Dynamite,
+  Grenade,
+  RocketLauncher,
+  AreaDisrupter
+};
+
+enum class AmmoType {
+  PistolBullet,
+  ShotgunShell,
+  MachineGunBullet,
+  GasCanister,
+  Rocket,
+  EnergyGlobe
+};
+
+enum class ArmorType {
+  HeavyLeatherCoat,
+  BulletProofVest
+};
+
+enum class ItemType {
+  CanOfNoScent
+};
+
+enum class CityType {
+  Austin,
+  Beijing,
+  Boston,
+  Detroit,
+  London,
+  LosAngeles,
+  Miami,
+  Moscow,
+  NewYork,
+  Paris,
+  SanFrancisco,
+  StPetersburg,
+  Sydney,
+  Toronto,
+  Vancouver
+};
+
+enum class CountryType {
+  Australia,
+  Canada,
+  China,
+  France,
+  UK,
+  USA,
+  Russia
+};
+
+enum class RankType {
+  Wannabe,
+  SmallTime,
+  Dealer,
+  BigDealer,
+  Distributer,
+  DrugLord
+};
+
+// Aliases for compatibility
+enum LegacyDrugType {
   DRUG_COCAINE,
   DRUG_CRACK,
   DRUG_ECSTACY,
@@ -25,10 +116,9 @@ typedef enum
   DRUG_POT,
   DRUG_SPECIALK,
   DRUG_SPEED
-} DrugType;
+};
 
-typedef enum
-{
+enum LegacyWeaponType {
   WEAPON_KNIFE,
   WEAPON_PISTOL,
   WEAPON_SHOTGUN,
@@ -38,31 +128,27 @@ typedef enum
   WEAPON_GRENADE,
   WEAPON_ROCKETLAUNCHER,
   WEAPON_AREADISRUPTER
-} WeaponType;
-  
-typedef enum
-{
+};
+
+enum LegacyAmmoType {
   AMMO_PISTOLBULLET,
   AMMO_SHOTGUNSHELL,
   AMMO_MACHINEGUNBULLET,
   AMMO_GASCANISTER,
   AMMO_ROCKET,
   AMMO_ENERGYGLOBE
-} AmmoType;
+};
 
-typedef enum
-{
+enum LegacyArmorType {
   ARMOR_HEAVYLEATHERCOAT,
   ARMOR_BULLETPROOFVEST
-} ArmorType;
+};
 
-typedef enum
-{
+enum LegacyItemType {
   ITEM_CANOFNOSCENT
-} ItemType;
+};
 
-typedef enum
-{
+enum LegacyCityType {
   CITY_AUSTIN,
   CITY_BEIJING,
   CITY_BOSTON,
@@ -78,10 +164,9 @@ typedef enum
   CITY_SYDNEY,
   CITY_TORONTO,
   CITY_VANCOUVER
-} CityType;
+};
 
-typedef enum
-{
+enum LegacyCountryType {
   COUNTRY_AUSTRALIA,
   COUNTRY_CANADA,
   COUNTRY_CHINA,
@@ -89,67 +174,53 @@ typedef enum
   COUNTRY_UK,
   COUNTRY_USA,
   COUNTRY_RUSSIA
-} CountryType;
+};
 
-typedef enum
-{
+enum LegacyRankType {
   RANK_WANNABE,
   RANK_SMALLTIME,
   RANK_DEALER,
   RANK_BIGDEALER,
   RANK_DISTRIBUTER,
   RANK_DRUGLORD
-} RankType;
+};
 
-typedef struct
-{
-  gint id;
-  gint country;
-} City;
+struct City {
+  int id;
+  int country;
+};
 
-typedef struct
-{
-  gint qty;
-  gint price;
-  gboolean available;
-} Drug;
+struct Drug {
+  int qty;
+  int price;
+  bool available;
+};
 
-typedef struct
-{
-  gint id;
-  gint ammo;
-  gint destruction;
-  gboolean mass_effect;
-  gboolean has_ammo;
-  gint price;
-} Weapon;
+struct Weapon {
+  int id;
+  int ammo;
+  int destruction;
+  bool mass_effect;
+  bool has_ammo;
+  int price;
+};
 
-typedef struct
-{
-  gint type;       /* Rank type */
-  gulong cash;     /* Minimum cash to achieve this rank */
-  gint container;  /* Container type */
-  gint capacity;   /* Container capacity */
-} Rank;
+struct Rank {
+  int type;
+  unsigned long cash;
+  int container;
+  int capacity;
+};
 
-extern const char * const drug_name[DRUG_NUM];
-
-extern const int drug_price[DRUG_NUM];
-
-extern const char * const city_name[CITY_NUM];
-
-extern const char * const country_name[];
-
-extern const Weapon weapon_info[];
-
-extern const City city_info[CITY_NUM];
+extern const std::array<const char*, DRUG_NUM> drug_name;
+extern const std::array<int, DRUG_NUM> drug_price;
+extern const std::array<const char*, CITY_NUM> city_name;
+extern const std::array<const char*, COUNTRY_NUM> country_name;
+extern const std::array<Weapon, WEAPON_NUM> weapon_info;
+extern const std::array<City, CITY_NUM> city_info;
 
 extern GSList *city_list;
-
-
 extern Drug drug_table[DRUG_NUM][CITY_NUM];
 
-gchar* money_string (guint value);
-void generate_drug ();
-
-#endif
+std::string money_string(unsigned int value);
+void generate_drug();

@@ -3,7 +3,7 @@ cmake_minimum_required(VERSION 3.24...3.31)
 # Enable output of compile commands during generation.
 option(CMAKE_EXPORT_COMPILE_COMMANDS "Export compile command" ON)
 
-project(druxlord VERSION 1.0.0 LANGUAGES C)
+project(druxlord VERSION 1.0.0 LANGUAGES CXX)
 set(PROJECT_NAMESPACE druxlord)
 message(STATUS "${PROJECT_NAME} version: ${PROJECT_VERSION}")
 
@@ -11,9 +11,9 @@ message(STATUS "system name: ${CMAKE_SYSTEM_NAME}")
 # Set max os target version.
 set(CMAKE_OSX_DEPLOYMENT_TARGET 10.15)
 
-set(CMAKE_C_STANDARD 11)
-set(CMAKE_C_STANDARD_REQUIRED ON)
-set(CMAKE_C_EXTENSIONS ON)
+set(CMAKE_CXX_STANDARD 20)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_CXX_EXTENSIONS OFF)
 
 # Default Build Type to be Release
 get_property(isMultiConfig GLOBAL PROPERTY GENERATOR_IS_MULTI_CONFIG)
@@ -63,7 +63,7 @@ endif()
 # Enable CCache if any
 find_program(CCACHE_PROGRAM ccache)
 if(CCACHE_PROGRAM)
-  set(CMAKE_C_COMPILER_LAUNCHER "${CCACHE_PROGRAM}")
+  set(CMAKE_CXX_COMPILER_LAUNCHER "${CCACHE_PROGRAM}")
   message(STATUS "CCache enabled")
 else()
   message(STATUS "CCache disabled")
@@ -81,19 +81,20 @@ include(CTest)
 add_executable(druxlord)
 target_sources(druxlord PRIVATE
   config.h
-  druxlord.c
+  druxlord.cpp
   druxlord.h
-  main.c
-  window-cb.c
+  main.cpp
+  window-cb.cpp
   window-cb.h
-  window.c
+  window.cpp
   window.h
 )
 target_include_directories(druxlord PRIVATE
   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
 )
+target_compile_features(druxlord PRIVATE cxx_std_20)
 target_compile_options(druxlord PRIVATE
-  $<$<C_COMPILER_ID:GNU,Clang>:-Wall -fstack-protector -fcommon>
+  $<$<CXX_COMPILER_ID:GNU,Clang>:-Wall -fstack-protector>
 )
 set_target_properties(druxlord PROPERTIES
   VERSION ${PROJECT_VERSION}
