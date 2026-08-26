@@ -101,8 +101,6 @@ const std::array<City, CITY_NUM> city_info = {{
   { CityType::Vancouver,     CountryType::Canada    }
 }};
 
-Drug drug_table[DRUG_NUM][CITY_NUM][DAY_NUM];
-
 std::string money_string(unsigned int value) {
   std::string s = std::to_string(value);
   int insert_pos = static_cast<int>(s.length()) - 3;
@@ -113,7 +111,11 @@ std::string money_string(unsigned int value) {
   return s;
 }
 
-void generate_drug() {
+GameState::GameState() {
+  generate_drug();
+}
+
+void GameState::generate_drug() {
   static std::random_device rd;
   static std::mt19937 gen(rd());
   std::bernoulli_distribution bool_dist(0.5);

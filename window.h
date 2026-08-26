@@ -15,7 +15,10 @@
 #include <QShortcut>
 #include <QKeySequence>
 
+class GameState;
+
 struct WindowMain {
+  GameState *game_state = nullptr;
   QWidget *window = nullptr;
   QTextEdit *textview_information = nullptr;
   QTreeWidget *treeview_market = nullptr;
@@ -133,7 +136,7 @@ extern WindowHospital window_hospital;
 extern WindowVault window_vault;
 extern WindowInput window_input;
 
-void create_window_main();
+void create_window_main(GameState &game_state);
 void create_window_finance();
 void create_window_shopping();
 void create_window_hospital();
@@ -142,8 +145,8 @@ void create_window_input(const char *title,
                          const char *message,
                          const char *question);
 
-void insert_treeview_drug(QTreeWidget *treeview);
-void set_label_frame_pocket(int npocket);
+void insert_treeview_drug(QTreeWidget *treeview, const GameState &game_state);
+void set_label_frame_pocket(int npocket, int capacity = 10);
 void set_label_location(int location);
 void set_label_day(int day);
 void set_label_rank(int rank);

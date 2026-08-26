@@ -42,25 +42,25 @@ WindowInput window_input{};
 
 static QGroupBox *group_pocket = nullptr;
 
-void insert_treeview_drug(QTreeWidget *treeview) {
+void insert_treeview_drug(QTreeWidget *treeview, const GameState &game_state) {
   if (!treeview) return;
   treeview->clear();
-  int j = 0;
-  int d = 0;
+  int j = game_state.location;
+  int d = game_state.day;
 
   for (int i = 0; i < DRUG_NUM; ++i) {
-    if (drug_table[i][j][d].available) {
-      std::string price_str = money_string(drug_table[i][j][d].price);
+    if (game_state.drug_table[i][j][d].available) {
+      std::string price_str = money_string(game_state.drug_table[i][j][d].price);
       QTreeWidgetItem *item = new QTreeWidgetItem(treeview);
       if (treeview->columnCount() == 4) {
         item->setText(COLUMN_NAME, QString::fromUtf8(drug_name[i]));
-        item->setText(COLUMN_QTY, QString::number(drug_table[i][j][d].qty));
+        item->setText(COLUMN_QTY, QString::number(game_state.drug_table[i][j][d].qty));
         item->setText(COLUMN_PRICE, QString::fromStdString(price_str));
         item->setTextAlignment(COLUMN_QTY, Qt::AlignRight | Qt::AlignVCenter);
         item->setTextAlignment(COLUMN_PRICE, Qt::AlignRight | Qt::AlignVCenter);
       } else {
         item->setText(0, QString::fromUtf8(drug_name[i]));
-        item->setText(1, QString::number(drug_table[i][j][d].qty));
+        item->setText(1, QString::number(game_state.drug_table[i][j][d].qty));
         item->setText(2, QString::fromStdString(price_str));
         item->setTextAlignment(1, Qt::AlignRight | Qt::AlignVCenter);
         item->setTextAlignment(2, Qt::AlignRight | Qt::AlignVCenter);
@@ -97,8 +97,8 @@ static QTreeWidget* create_treeview_drug(bool with_status) {
   return treeview;
 }
 
-void set_label_frame_pocket(int npocket) {
-  auto str = std::format("You pants pocket ({}/10)", npocket);
+void set_label_frame_pocket(int npocket, int capacity) {
+  auto str = std::format("You pants pocket ({}/{})", npocket, capacity);
   if (window_main.label_pocket) {
     window_main.label_pocket->setText(QString::fromStdString(str));
   }
@@ -156,7 +156,8 @@ void set_label_debt(int value) {
   }
 }
 
-void create_window_main() {
+void create_window_main(GameState &game_state) {
+  window_main.game_state = &game_state;
   window_main.window = new QWidget();
   window_main.window->setWindowTitle(QString::fromUtf8(kProgramName.data(), kProgramName.size()));
 
@@ -255,12 +256,12 @@ void create_window_main() {
   vbox_right->setSpacing(5);
   hbox_down->addLayout(vbox_right);
 
-  group_pocket = new QGroupBox("You pants pocket (0/10)", window_main.window);
+  group_pocket = new QGroupBox(QString::fromStdString(std::format("You pants pocket ({}/{})", game_state.pocket, game_state.pocket_capacity)), window_main.window);
   QVBoxLayout *vbox_pocket = new QVBoxLayout(group_pocket);
   vbox_pocket->setContentsMargins(5, 5, 5, 5);
   window_main.label_pocket = new QLabel(group_pocket);
   window_main.label_pocket->hide();
-  set_label_frame_pocket(0);
+  set_label_frame_pocket(game_state.pocket, game_state.pocket_capacity);
 
   window_main.treeview_pocket = create_treeview_drug(false);
   window_main.treeview_pocket->setMinimumSize(250, 180);
@@ -277,7 +278,7 @@ void create_window_main() {
   QLabel *label_loc_title = new QLabel("Location:", frame_status);
   box_loc->addWidget(label_loc_title);
   window_main.label_location = new QLabel(frame_status);
-  set_label_location(0);
+  set_label_location(game_state.location);
   box_loc->addWidget(window_main.label_location);
   box_loc->addStretch();
   vbox_status->addLayout(box_loc);
@@ -288,7 +289,7 @@ void create_window_main() {
   box_health->addWidget(label_health_title);
   window_main.progressbar_health = new QProgressBar(frame_status);
   window_main.progressbar_health->setRange(0, 100);
-  window_main.progressbar_health->setValue(100);
+  window_main.progressbar_health->setValue(game_state.health);
   window_main.progressbar_health->setTextVisible(false);
   box_health->addWidget(window_main.progressbar_health);
   vbox_status->addLayout(box_health);
@@ -301,7 +302,7 @@ void create_window_main() {
   QLabel *label_day_title = new QLabel("Day:", frame_status);
   box_day->addWidget(label_day_title);
   window_main.label_day = new QLabel(frame_status);
-  set_label_day(0);
+  set_label_day(game_state.day);
   box_day->addWidget(window_main.label_day);
   box_day_rank->addLayout(box_day);
 
@@ -310,7 +311,7 @@ void create_window_main() {
   QLabel *label_rank_title = new QLabel("Rank:", frame_status);
   box_rank->addWidget(label_rank_title);
   window_main.label_rank = new QLabel(frame_status);
-  set_label_rank(0);
+  set_label_rank(game_state.rank);
   box_rank->addWidget(window_main.label_rank);
   box_day_rank->addLayout(box_rank);
   box_day_rank->addStretch();
@@ -326,19 +327,19 @@ void create_window_main() {
   QLabel *label_cash_title = new QLabel("Cash:", frame_status);
   grid_money->addWidget(label_cash_title, 0, 0, Qt::AlignLeft);
   window_main.label_cash = new QLabel(frame_status);
-  set_label_cash(1900);
+  set_label_cash(game_state.cash);
   grid_money->addWidget(window_main.label_cash, 0, 1, Qt::AlignRight);
 
   QLabel *label_bank_title = new QLabel("Bank:", frame_status);
   grid_money->addWidget(label_bank_title, 1, 0, Qt::AlignLeft);
   window_main.label_bank = new QLabel(frame_status);
-  set_label_bank(0);
+  set_label_bank(game_state.bank);
   grid_money->addWidget(window_main.label_bank, 1, 1, Qt::AlignRight);
 
   QLabel *label_debt_title = new QLabel("Debt:", frame_status);
   grid_money->addWidget(label_debt_title, 2, 0, Qt::AlignLeft);
   window_main.label_debt = new QLabel(frame_status);
-  set_label_debt(0);
+  set_label_debt(game_state.debt);
   grid_money->addWidget(window_main.label_debt, 2, 1, Qt::AlignRight);
 
   box_money_status->addLayout(grid_money);

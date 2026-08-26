@@ -132,7 +132,22 @@ extern const std::array<const char*, COUNTRY_NUM> country_name;
 extern const std::array<Weapon, WEAPON_NUM> weapon_info;
 extern const std::array<City, CITY_NUM> city_info;
 
-extern Drug drug_table[DRUG_NUM][CITY_NUM][DAY_NUM];
+class GameState {
+public:
+  GameState();
+
+  void generate_drug();
+
+  Drug drug_table[DRUG_NUM][CITY_NUM][DAY_NUM]{};
+  int location = 0;
+  int day = 0;
+  int rank = 0;
+  int health = 100;
+  int cash = 1900;
+  int bank = 0;
+  int debt = 0;
+  int pocket = 0;
+  int pocket_capacity = 10;
+};
 
 std::string money_string(unsigned int value);
-void generate_drug();

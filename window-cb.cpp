@@ -10,8 +10,10 @@ void window_main_button_buy_clicked_cb() {
 }
 
 void window_main_button_stayhere_clicked_cb() {
-  generate_drug();
-  insert_treeview_drug(window_main.treeview_market);
+  if (window_main.game_state) {
+    window_main.game_state->generate_drug();
+    insert_treeview_drug(window_main.treeview_market, *window_main.game_state);
+  }
 }
 
 void menuitem_places_finances_activate_cb() {
