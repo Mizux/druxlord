@@ -46,20 +46,21 @@ void insert_treeview_drug(QTreeWidget *treeview) {
   if (!treeview) return;
   treeview->clear();
   int j = 0;
+  int d = 0;
 
   for (int i = 0; i < DRUG_NUM; ++i) {
-    if (drug_table[i][j].available) {
-      std::string price_str = money_string(drug_table[i][j].price);
+    if (drug_table[i][j][d].available) {
+      std::string price_str = money_string(drug_table[i][j][d].price);
       QTreeWidgetItem *item = new QTreeWidgetItem(treeview);
       if (treeview->columnCount() == 4) {
         item->setText(COLUMN_NAME, QString::fromUtf8(drug_name[i]));
-        item->setText(COLUMN_QTY, QString::number(drug_table[i][j].qty));
+        item->setText(COLUMN_QTY, QString::number(drug_table[i][j][d].qty));
         item->setText(COLUMN_PRICE, QString::fromStdString(price_str));
         item->setTextAlignment(COLUMN_QTY, Qt::AlignRight | Qt::AlignVCenter);
         item->setTextAlignment(COLUMN_PRICE, Qt::AlignRight | Qt::AlignVCenter);
       } else {
         item->setText(0, QString::fromUtf8(drug_name[i]));
-        item->setText(1, QString::number(drug_table[i][j].qty));
+        item->setText(1, QString::number(drug_table[i][j][d].qty));
         item->setText(2, QString::fromStdString(price_str));
         item->setTextAlignment(1, Qt::AlignRight | Qt::AlignVCenter);
         item->setTextAlignment(2, Qt::AlignRight | Qt::AlignVCenter);

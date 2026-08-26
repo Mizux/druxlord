@@ -8,6 +8,7 @@ inline constexpr int CITY_NUM = 15;
 inline constexpr int WEAPON_NUM = 9;
 inline constexpr int COUNTRY_NUM = 7;
 inline constexpr int RANK_NUM = 6;
+inline constexpr int DAY_NUM = 30;
 
 enum class DrugType {
   Cocaine,
@@ -131,7 +132,7 @@ extern const std::array<const char*, COUNTRY_NUM> country_name;
 extern const std::array<Weapon, WEAPON_NUM> weapon_info;
 extern const std::array<City, CITY_NUM> city_info;
 
-extern Drug drug_table[DRUG_NUM][CITY_NUM];
+extern Drug drug_table[DRUG_NUM][CITY_NUM][DAY_NUM];
 
 std::string money_string(unsigned int value);
 void generate_drug();

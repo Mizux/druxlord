@@ -101,7 +101,7 @@ const std::array<City, CITY_NUM> city_info = {{
   { CityType::Vancouver,     CountryType::Canada    }
 }};
 
-Drug drug_table[DRUG_NUM][CITY_NUM];
+Drug drug_table[DRUG_NUM][CITY_NUM][DAY_NUM];
 
 std::string money_string(unsigned int value) {
   std::string s = std::to_string(value);
@@ -123,11 +123,18 @@ void generate_drug() {
 
   for (int i = 0; i < DRUG_NUM; ++i) {
     for (int j = 0; j < CITY_NUM; ++j) {
-      drug_table[i][j].available = bool_dist(gen);
-      if (drug_table[i][j].available) {
-        drug_table[i][j].qty = qty_dist(gen);
-        int divisor = (drug_table[i][j].qty > 0) ? drug_table[i][j].qty : divisor_dist(gen);
-        drug_table[i][j].price = static_cast<int>((10.0 / divisor) * range_dist(gen) * drug_price[i]);
+      for (int d = 0; d < DAY_NUM; ++d) {
+        drug_table[i][j][d].available = bool_dist(gen);
+        if (drug_table[i][j][d].available) {
+          drug_table[i][j][d].qty = qty_dist(gen);
+          int divisor = (drug_table[i][j][d].qty > 0) ? drug_table[i][j][d].qty
+                                                      : divisor_dist(gen);
+          drug_table[i][j][d].price = static_cast<int>(
+              (10.0 / divisor) * range_dist(gen) * drug_price[i]);
+        } else {
+          drug_table[i][j][d].qty = 0;
+          drug_table[i][j][d].price = drug_price[i];
+        }
       }
     }
   }
