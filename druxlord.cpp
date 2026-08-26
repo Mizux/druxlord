@@ -141,3 +141,7 @@ void GameState::generate_drug() {
     }
   }
 }
+
+void GameState::stay_here() {
+  if (day < DAY_NUM - 1) day += 1;
+}

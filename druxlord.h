@@ -136,7 +136,7 @@ class GameState {
 public:
   GameState();
 
-  void generate_drug();
+  void stay_here();
 
   Drug drug_table[DRUG_NUM][CITY_NUM][DAY_NUM]{};
   int location = 0;
@@ -148,6 +148,9 @@ public:
   int debt = 0;
   int pocket = 0;
   int pocket_capacity = 10;
+
+ private:
+  void generate_drug();
 };
 
 std::string money_string(unsigned int value);
