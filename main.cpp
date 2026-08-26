@@ -4,6 +4,9 @@
 
 int main(int argc, char *argv[]) {
   QApplication app(argc, argv);
+  app.setOrganizationName("Mizux");
+  app.setApplicationName("DruxLord");
+
   GameState game_state;
   create_window_main(game_state);
   window_main.window->show();
