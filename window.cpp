@@ -52,19 +52,20 @@ void insert_treeview_drug(QTreeWidget *treeview, const GameState &game_state) {
     if (game_state.drug_table[i][j][d].available) {
       std::string price_str = money_string(game_state.drug_table[i][j][d].price);
       QTreeWidgetItem *item = new QTreeWidgetItem(treeview);
+      std::string name_str = drug_name(drug_info[i].id);
       if (treeview->columnCount() == 4) {
         if (game_state.drug_table[i][j][d].event_flag > 0) {
           item->setText(COLUMN_STATUS, QString::fromUtf8("\u25B2"));
         } else if (game_state.drug_table[i][j][d].event_flag < 0) {
           item->setText(COLUMN_STATUS, QString::fromUtf8("\u25BC"));
         }
-        item->setText(COLUMN_NAME, QString::fromUtf8(drug_name[i]));
+        item->setText(COLUMN_NAME, QString::fromStdString(name_str));
         item->setText(COLUMN_QTY, QString::number(game_state.drug_table[i][j][d].qty));
         item->setText(COLUMN_PRICE, QString::fromStdString(price_str));
         item->setTextAlignment(COLUMN_QTY, Qt::AlignRight | Qt::AlignVCenter);
         item->setTextAlignment(COLUMN_PRICE, Qt::AlignRight | Qt::AlignVCenter);
       } else {
-        item->setText(0, QString::fromUtf8(drug_name[i]));
+        item->setText(0, QString::fromStdString(name_str));
         item->setText(1, QString::number(game_state.drug_table[i][j][d].qty));
         item->setText(2, QString::fromStdString(price_str));
         item->setTextAlignment(1, Qt::AlignRight | Qt::AlignVCenter);
@@ -113,8 +114,13 @@ void set_label_frame_pocket(int npocket, int capacity) {
 }
 
 void set_label_location(int location) {
-  constexpr std::array location_str = {"Austin, US"};
-  auto markup = std::format("<span><b>{}</b></span>", location_str[0]);
+  std::string loc_str;
+  if (location >= 0 && location < CITY_NUM) {
+    loc_str = std::format("{}, {}", city_name(city_info[location].id), country_name(city_info[location].country));
+  } else {
+    loc_str = "Austin, USA";
+  }
+  auto markup = std::format("<span><b>{}</b></span>", loc_str);
   if (window_main.label_location) {
     window_main.label_location->setText(QString::fromStdString(markup));
   }

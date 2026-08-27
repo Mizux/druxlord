@@ -143,9 +143,9 @@ inline constexpr std::array<int, RANK_NUM> rank_capacity = {
   20000
 };
 
-extern const std::array<const char*, DRUG_NUM> drug_name;
-extern const std::array<const char*, CITY_NUM> city_name;
-extern const std::array<const char*, COUNTRY_NUM> country_name;
+std::string drug_name(DrugType type);
+std::string city_name(CityType type);
+std::string country_name(CountryType type);
 
 extern const std::array<Drug, DRUG_NUM> drug_info;
 extern const std::array<Weapon, WEAPON_NUM> weapon_info;

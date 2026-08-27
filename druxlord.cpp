@@ -6,25 +6,62 @@
 #include <random>
 #include <string>
 
-const std::array<const char*, DRUG_NUM> drug_name = {
-  "Cocaine",
-  "Crack",
-  "Ecstasy",
-  "Hashish",
-  "Heroin",
-  "Ice",
-  "Kat",
-  "LSD",
-  "MDA",
-  "Morphine",
-  "Mushrooms",
-  "Opium",
-  "PCP",
-  "Peyote",
-  "Pot",
-  "Special K",
-  "Speed"
-};
+std::string drug_name(DrugType type) {
+  switch (type) {
+    case DrugType::Cocaine:   return "Cocaine";
+    case DrugType::Crack:     return "Crack";
+    case DrugType::Ecstasy:   return "Ecstasy";
+    case DrugType::Hashish:   return "Hashish";
+    case DrugType::Heroin:    return "Heroin";
+    case DrugType::Ice:       return "Ice";
+    case DrugType::Kat:       return "Kat";
+    case DrugType::LSD:       return "LSD";
+    case DrugType::MDA:       return "MDA";
+    case DrugType::Morphine:  return "Morphine";
+    case DrugType::Mushrooms: return "Mushrooms";
+    case DrugType::Opium:     return "Opium";
+    case DrugType::PCP:       return "PCP";
+    case DrugType::Peyote:    return "Peyote";
+    case DrugType::Pot:       return "Pot";
+    case DrugType::SpecialK:  return "Special K";
+    case DrugType::Speed:     return "Speed";
+  }
+  return "Unknown";
+}
+
+std::string city_name(CityType type) {
+  switch (type) {
+    case CityType::Austin:       return "Austin";
+    case CityType::Beijing:      return "Beijing";
+    case CityType::Boston:       return "Boston";
+    case CityType::Detroit:      return "Detroit";
+    case CityType::London:       return "London";
+    case CityType::LosAngeles:   return "Los Angeles";
+    case CityType::Miami:        return "Miami";
+    case CityType::Moscow:       return "Moscow";
+    case CityType::NewYork:      return "New York";
+    case CityType::Paris:        return "Paris";
+    case CityType::SanFrancisco: return "San Francisco";
+    case CityType::StPetersburg: return "St Petersburg";
+    case CityType::Sydney:       return "Sydney";
+    case CityType::Toronto:      return "Toronto";
+    case CityType::Vancouver:    return "Vancouver";
+  }
+  return "Unknown";
+}
+
+std::string country_name(CountryType type) {
+  switch (type) {
+    case CountryType::Australia: return "Australia";
+    case CountryType::Canada:    return "Canada";
+    case CountryType::China:     return "China";
+    case CountryType::France:    return "France";
+    case CountryType::UK:        return "UK";
+    case CountryType::USA:       return "USA";
+    case CountryType::Russia:    return "Russia";
+  }
+  return "Unknown";
+}
 
 const std::array<Drug, DRUG_NUM> drug_info = {{
   { DrugType::Cocaine,    5100 },
@@ -45,34 +82,6 @@ const std::array<Drug, DRUG_NUM> drug_info = {{
   { DrugType::SpecialK,   1500 },
   { DrugType::Speed,       800 }
 }};
-
-const std::array<const char*, CITY_NUM> city_name = {
-  "Austin",
-  "Beijing",
-  "Boston",
-  "Detroit",
-  "London",
-  "Los Angeles",
-  "Miami",
-  "Moscow",
-  "New York",
-  "Paris",
-  "San Francisco",
-  "St Petersburg",
-  "Sydney",
-  "Toronto",
-  "Vancouver"
-};
-
-const std::array<const char*, COUNTRY_NUM> country_name = {
-  "Australia",
-  "Canada",
-  "China",
-  "England",
-  "France",
-  "USA",
-  "Russia"
-};
 
 const std::array<Weapon, WEAPON_NUM> weapon_info = {{
   { WeaponType::Knife,           AmmoType::None,              20, false, false, 100    },
@@ -237,10 +246,10 @@ std::string GameState::get_market_news(int loc, int d) const {
   for (int i = 0; i < DRUG_NUM; ++i) {
     if (drug_table[i][loc][d].event_flag == 1) {
       if (!news.empty()) news += "\n\n";
-      news += std::format("Prices go through the roof!\nCops burst into a {} warehouse, seizing everything.", drug_name[i]);
+      news += std::format("Prices go through the roof!\nCops burst into a {} warehouse, seizing everything.", drug_name(drug_info[i].id));
     } else if (drug_table[i][loc][d].event_flag == -1) {
       if (!news.empty()) news += "\n\n";
-      news += std::format("Prices plummet!\nCrates of {} were discovered floating in the ocean.", drug_name[i]);
+      news += std::format("Prices plummet!\nCrates of {} were discovered floating in the ocean.", drug_name(drug_info[i].id));
     }
   }
   return news;
