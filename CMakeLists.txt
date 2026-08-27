@@ -8,7 +8,7 @@ set(PROJECT_NAMESPACE druxlord)
 message(STATUS "${PROJECT_NAME} version: ${PROJECT_VERSION}")
 
 message(STATUS "system name: ${CMAKE_SYSTEM_NAME}")
-# Set max os target version.
+# Set macOS target version.
 set(CMAKE_OSX_DEPLOYMENT_TARGET 13.4)
 
 set(CMAKE_CXX_STANDARD 20)
