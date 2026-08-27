@@ -49,7 +49,7 @@ Each of the 15 cities in the game has a specific price factor (stored at offset 
 
 ### Global Absolute Min / Max Across All Cities
 
-Accounting for the lowest city factor ($80\%$ in Detroit and San Francisco) and highest city factor ($190\%$ in Beijing), the absolute standard price boundaries are:
+Accounting for the lowest city factor (80% in Detroit and San Francisco) and highest city factor (190% in Beijing), the absolute standard price boundaries are:
 
 | Drug Name | Absolute Min | City Mean Range | Absolute Max |
 |:---|:---:|:---:|:---:|
@@ -125,24 +125,29 @@ flowchart TD
 
 ### Step 1: Base Price Scaling
 For each drug in each city:
-$$\text{Mean} = \left\lfloor \frac{P_{\text{base}} \times \text{CityFactor}}{100} \right\rfloor$$
-$$\text{Half} = \left\lfloor \frac{\text{Mean}}{2} \right\rfloor$$
-$$\text{MinPrice} = \text{Mean} - \text{Half} = 50\% \text{ of Mean}$$
-$$\text{MaxPrice} = \text{Mean} + \text{Half} = 150\% \text{ of Mean}$$
+
+$$\text{Mean} = \left\lfloor \frac{P_{\text{base}} \times \text{CityFactor}}{100} \right\rfloor$$  
+$$\text{Half} = \left\lfloor \frac{\text{Mean}}{2} \right\rfloor$$  
+$$\text{MinPrice} = \text{Mean} - \text{Half} = 50\% \text{ of Mean}$$  
+$$\text{MaxPrice} = \text{Mean} + \text{Half} = 150\% \text{ of Mean}$$  
 
 ### Step 2: Price Drift Towards Dynamic Target
-Prices do not jump randomly; they drift smoothly toward `target_price`:
-$$\Delta = \text{target\_price} - \text{current\_price}$$
+Prices do not jump randomly; they drift smoothly toward $$\text{TargetPrice}$$:
+
+$$\Delta = \text{TargetPrice} - \text{CurrentPrice}$$
+
 $$\text{step} = \begin{cases} 
 \text{rand}() \bmod \Delta & \text{if } \Delta > 0 \\
 -(\text{rand}() \bmod |\Delta|) & \text{if } \Delta < 0 \\
 0 & \text{if } \Delta = 0 
 \end{cases}$$
-$$\text{current\_price}_{\text{new}} = \text{current\_price} + \text{step}$$
+
+$$\text{CurrentPrice}_{\text{new}} = \text{CurrentPrice} + \text{step}$$
 
 ### Step 3: Target Regeneration
-When the current price gets within **10%** of the current target ($|\Delta| < \lfloor 0.10 \times \text{current\_price} \rfloor$), a new target is chosen uniformly within the valid normal range:
-$$\text{target\_price}_{\text{new}} = \text{Half} + (\text{rand}() \bmod \text{Mean})$$
+When the current price gets within **10%** of the current target ($|\Delta| < \lfloor 0.10 \times \text{CurrentPrice} \rfloor$),  
+a new target is chosen uniformly within the valid normal range:  
+$$\text{TargetPrice}_{\text{new}} = \text{Half} + (\text{rand}() \bmod \text{Mean})$$
 
 ### Step 4: Supply & Demand Curve (Available Quantity)
 Market supply is inversely related to price, scaled by the player's rank capacity ($\text{Cap}_{\text{rank}}$ at `0x004230f0`):
@@ -154,8 +159,10 @@ Market supply is inversely related to price, scaled by the player's rank capacit
 * **Drug Lord**: $20,000$
 
 The market quantity is calculated and smoothed against the previous day:
-$$\text{TargetQty} = \text{Cap}_{\text{rank}} \times \left(1 - \frac{\text{current\_price} - \text{MinPrice}}{\text{Mean}}\right)$$
-$$\text{quantity}_{\text{new}} = \max\left(0, \left\lfloor \frac{\text{TargetQty} + \text{quantity}_{\text{old}}}{2} \right\rfloor\right)$$
+
+$$\text{TargetQty} = \text{Cap}_{\text{rank}} \times \left(1 - \frac{\text{CurrentPrice} - \text{MinPrice}}{\text{Mean}})\right)$$
+
+$$\text{Quantity}_{\text{new}} = \max\left(0, \left(\lfloor \frac{\text{TargetQty} + \text{Quantity}_{\text{old}}}{2} )\right\rfloor)\right)$$
 
 ---
 
@@ -164,20 +171,20 @@ $$\text{quantity}_{\text{new}} = \max\left(0, \left\lfloor \frac{\text{TargetQty
 Every day, each drug in a market has an independent **1 in 50 (2%)** chance of triggering a major market disruption.
 
 ### A. Price Spike Event (`event_flag = +1`)
-* **Trigger Chance**: $1\%$ (50% of the 2% event roll)
-* **Mechanics**:
-  $$\text{Multiplier} = (\text{rand}() \bmod 5) + 5 \quad \implies 5\times \text{ to } 9\times$$
-  $$\text{current\_price} = \left(\text{Mean} + (\text{rand}() \bmod \text{Half})\right) \times \text{Multiplier}$$
+* **Trigger Chance**: **1%** (50% of the 2% event roll)
+* **Mechanics**:  
+  $$\text{Multiplier} = (\text{rand}() \bmod 5) + 5 \quad \implies 5\times \text{ to } 9\times$$  
+  $$\text{CurrentPrice} = \left(\text{Mean} + (\text{rand}() \bmod \text{Half})\right) \times \text{Multiplier}$$  
   $$\text{quantity} = \left\lfloor \frac{\text{quantity}}{(\text{rand}() \bmod 5) + 2} \right\rfloor \quad \implies \text{divided by } 2\times \text{ to } 6\times$$
 * **Sample In-Game Narrative**:
   * *Reason*: `"Cops burst into a %s warehouse, seizing everything."`
   * *Headline*: `"Prices go through the roof!"` / `"Prices are outrageous!"` / `"Prices are astronomical!"`
 
 ### B. Price Crash Event (`event_flag = -1`)
-* **Trigger Chance**: $1\%$ (50% of the 2% event roll)
-* **Mechanics**:
-  $$\text{Divisor} = (\text{rand}() \bmod 5) + 5 \quad \implies 5\times \text{ to } 9\times$$
-  $$\text{current\_price} = \left\lfloor \frac{\text{Mean} - (\text{rand}() \bmod \text{Half})}{\text{Divisor}} \right\rfloor$$
+* **Trigger Chance**: **1%** (50% of the 2% event roll)
+* **Mechanics**:  
+  $$\text{Divisor} = (\text{rand}() \bmod 5) + 5 \quad \implies 5\times \text{ to } 9\times$$  
+  $$\text{CurrentPrice} = \left\lfloor \frac{\text{Mean} - (\text{rand}() \bmod \text{Half})}{\text{Divisor}} \right\rfloor$$  
   $$\text{quantity} = \text{quantity} \times ((\text{rand}() \bmod 5) + 2) \quad \implies \text{multiplied by } 2\times \text{ to } 6\times$$
 * **Sample In-Game Narrative**:
   * *Reason*: `"A police warehouse is broken into and %s is stolen."` / `"Crates of %s were discovered floating in the ocean."`
