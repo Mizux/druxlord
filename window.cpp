@@ -42,18 +42,41 @@ WindowInput window_input{};
 
 static QGroupBox *group_pocket = nullptr;
 
+void update_all_ui(const GameState &game_state) {
+  set_label_day(game_state.day + 1);
+  set_label_rank(game_state.rank);
+  set_label_cash(game_state.cash);
+  set_label_bank(game_state.bank);
+  set_label_debt(game_state.debt);
+  set_label_location(game_state.location);
+  set_label_frame_pocket(game_state.pocket, game_state.pocket_capacity);
+  if (window_main.progressbar_health) {
+    window_main.progressbar_health->setValue(game_state.health);
+  }
+  if (window_main.treeview_market) {
+    insert_treeview_drug(window_main.treeview_market, game_state);
+  }
+  if (window_main.treeview_pocket) {
+    insert_treeview_drug(window_main.treeview_pocket, game_state);
+  }
+  if (window_main.textview_information) {
+    std::string news = game_state.get_market_news(game_state.location, game_state.day);
+    window_main.textview_information->setText(QString::fromStdString(news));
+  }
+}
+
 void insert_treeview_drug(QTreeWidget *treeview, const GameState &game_state) {
   if (!treeview) return;
   treeview->clear();
   int j = game_state.location;
   int d = game_state.day;
 
-  for (int i = 0; i < DRUG_NUM; ++i) {
-    if (game_state.drug_table[i][j][d].available) {
-      std::string price_str = money_string(game_state.drug_table[i][j][d].price);
-      QTreeWidgetItem *item = new QTreeWidgetItem(treeview);
-      std::string name_str = drug_name(drug_info[i].id);
-      if (treeview->columnCount() == 4) {
+  if (treeview->columnCount() == 4) {
+    for (int i = 0; i < DRUG_NUM; ++i) {
+      if (game_state.drug_table[i][j][d].available) {
+        std::string price_str = money_string(game_state.drug_table[i][j][d].price);
+        QTreeWidgetItem *item = new QTreeWidgetItem(treeview);
+        std::string name_str = drug_name(drug_info[i].id);
         if (game_state.drug_table[i][j][d].event_flag > 0) {
           item->setText(COLUMN_STATUS, QString::fromUtf8("\u25B2"));
         } else if (game_state.drug_table[i][j][d].event_flag < 0) {
@@ -62,12 +85,20 @@ void insert_treeview_drug(QTreeWidget *treeview, const GameState &game_state) {
         item->setText(COLUMN_NAME, QString::fromStdString(name_str));
         item->setText(COLUMN_QTY, QString::number(game_state.drug_table[i][j][d].qty));
         item->setText(COLUMN_PRICE, QString::fromStdString(price_str));
+        item->setData(COLUMN_NAME, Qt::UserRole, i);
         item->setTextAlignment(COLUMN_QTY, Qt::AlignRight | Qt::AlignVCenter);
         item->setTextAlignment(COLUMN_PRICE, Qt::AlignRight | Qt::AlignVCenter);
-      } else {
+      }
+    }
+  } else {
+    for (int i = 0; i < DRUG_NUM; ++i) {
+      if (game_state.player_qty[i] > 0) {
+        QTreeWidgetItem *item = new QTreeWidgetItem(treeview);
+        std::string name_str = drug_name(drug_info[i].id);
         item->setText(0, QString::fromStdString(name_str));
-        item->setText(1, QString::number(game_state.drug_table[i][j][d].qty));
-        item->setText(2, QString::fromStdString(price_str));
+        item->setText(1, QString::number(game_state.player_qty[i]));
+        item->setText(2, QString::fromStdString(money_string(game_state.player_price[i])));
+        item->setData(0, Qt::UserRole, i);
         item->setTextAlignment(1, Qt::AlignRight | Qt::AlignVCenter);
         item->setTextAlignment(2, Qt::AlignRight | Qt::AlignVCenter);
       }
@@ -134,8 +165,16 @@ void set_label_day(int day) {
 }
 
 void set_label_rank(int rank) {
-  constexpr std::array rank_str = {"wannabe"};
-  auto markup = std::format("<span><b>{}</b></span>", rank_str[0]);
+  constexpr std::array<const char*, RANK_NUM> rank_str = {
+    "wannabe",
+    "small time operator",
+    "dealer",
+    "big time dealer",
+    "distributor",
+    "drug lord"
+  };
+  const char *r = (rank >= 0 && rank < RANK_NUM) ? rank_str[rank] : "wannabe";
+  auto markup = std::format("<span><b>{}</b></span>", r);
   if (window_main.label_rank) {
     window_main.label_rank->setText(QString::fromStdString(markup));
   }
@@ -211,9 +250,11 @@ void create_window_main(GameState &game_state) {
   box_action->addWidget(window_main.button_buy);
 
   window_main.button_sell = new QPushButton(QString::fromUtf8("\u2190 &Sell"), frame_action);
+  QObject::connect(window_main.button_sell, &QPushButton::clicked, window_main_button_sell_clicked_cb);
   box_action->addWidget(window_main.button_sell);
 
   window_main.button_dump = new QPushButton("&Dump", frame_action);
+  QObject::connect(window_main.button_dump, &QPushButton::clicked, window_main_button_dump_clicked_cb);
   box_action->addWidget(window_main.button_dump);
 
   window_main.button_places = new QPushButton("Places...", frame_action);
@@ -236,6 +277,7 @@ void create_window_main(GameState &game_state) {
   box_tomorrow->addWidget(window_main.button_stayhere);
 
   window_main.button_flyaway = new QPushButton("Fly Away", frame_tomorrow);
+  QObject::connect(window_main.button_flyaway, &QPushButton::clicked, window_main_button_flyaway_clicked_cb);
   box_tomorrow->addWidget(window_main.button_flyaway);
 
   vbox_middle->addWidget(frame_tomorrow);
@@ -249,15 +291,19 @@ void create_window_main(GameState &game_state) {
   box_game->addWidget(window_main.checkbutton_sound);
 
   window_main.button_about = new QPushButton("&About", frame_game);
+  QObject::connect(window_main.button_about, &QPushButton::clicked, window_main_button_about_clicked_cb);
   box_game->addWidget(window_main.button_about);
 
   window_main.button_docs = new QPushButton("Docs", frame_game);
+  QObject::connect(window_main.button_docs, &QPushButton::clicked, window_main_button_docs_clicked_cb);
   box_game->addWidget(window_main.button_docs);
 
   window_main.button_highscores = new QPushButton("High Scores", frame_game);
+  QObject::connect(window_main.button_highscores, &QPushButton::clicked, window_main_button_highscores_clicked_cb);
   box_game->addWidget(window_main.button_highscores);
 
   window_main.button_newgamequit = new QPushButton("New &Game", frame_game);
+  QObject::connect(window_main.button_newgamequit, &QPushButton::clicked, window_main_button_newgamequit_clicked_cb);
   box_game->addWidget(window_main.button_newgamequit);
 
   vbox_middle->addWidget(frame_game);
@@ -364,11 +410,7 @@ void create_window_main(GameState &game_state) {
   window_main.shortcut_quit = new QShortcut(QKeySequence::Quit, window_main.window);
   QObject::connect(window_main.shortcut_quit, &QShortcut::activated, window_main.window, &QWidget::close);
 
-  insert_treeview_drug(window_main.treeview_market, game_state);
-  if (window_main.textview_information) {
-    std::string news = game_state.get_market_news(game_state.location, game_state.day);
-    window_main.textview_information->setText(QString::fromStdString(news));
-  }
+  update_all_ui(game_state);
 
   window_main.window->layout()->setSizeConstraint(QLayout::SetFixedSize);
 }

@@ -145,6 +145,7 @@ void create_window_input(const char *title,
                          const char *message,
                          const char *question);
 
+void update_all_ui(const GameState &game_state);
 void insert_treeview_drug(QTreeWidget *treeview, const GameState &game_state);
 void set_label_frame_pocket(int npocket, int capacity = 10);
 void set_label_location(int location);

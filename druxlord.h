@@ -155,18 +155,26 @@ class GameState {
 public:
   GameState();
 
+  void newgame();
   void stay_here();
   void generate_drug();
   std::string get_market_news(int loc, int d) const;
+
+  // Player pocket inventory
+  int player_qty[DRUG_NUM]{};
+  int player_price[DRUG_NUM]{}; // average cost basis
+
+  // Vault inventory
+  int vault_qty[DRUG_NUM]{};
 
   DrugState drug_table[DRUG_NUM][CITY_NUM][DAY_NUM]{};
   int location = 0;
   int day = 0;
   int rank = 0;
   int health = 100;
-  int cash = 1900;
+  int cash = 2000;
   int bank = 0;
-  int debt = 0;
+  int debt = 1000;
   int pocket = 0;
   int pocket_capacity = 10;
 };

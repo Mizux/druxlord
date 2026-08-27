@@ -124,6 +124,24 @@ std::string money_string(unsigned int value) {
 }
 
 GameState::GameState() {
+  newgame();
+}
+
+void GameState::newgame() {
+  location = 0;
+  day = 0;
+  rank = 0;
+  health = 100;
+  cash = 2000;
+  bank = 0;
+  debt = 1000;
+  pocket = 0;
+  pocket_capacity = 10;
+  for (int i = 0; i < DRUG_NUM; ++i) {
+    player_qty[i] = 0;
+    player_price[i] = 0;
+    vault_qty[i] = 0;
+  }
   generate_drug();
 }
 
@@ -238,6 +256,25 @@ void GameState::generate_drug() {
 void GameState::stay_here() {
   if (day < DAY_NUM - 1) {
     day += 1;
+    if (debt > 0) {
+      debt = debt + (debt * 10) / 100;
+    }
+    if (bank > 0) {
+      bank = bank + (bank * 5) / 100;
+    }
+    int net_worth = cash + bank - debt;
+    if (net_worth >= 50000000 && rank < 5) {
+      rank = 5;
+    } else if (net_worth >= 10000000 && rank < 4) {
+      rank = 4;
+    } else if (net_worth >= 1000000 && rank < 3) {
+      rank = 3;
+    } else if (net_worth >= 100000 && rank < 2) {
+      rank = 2;
+    } else if (net_worth >= 20000 && rank < 1) {
+      rank = 1;
+    }
+    pocket_capacity = rank_capacity[rank];
   }
 }
 
