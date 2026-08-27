@@ -34,25 +34,28 @@ inline constexpr int COLUMN_QTY_WIDTH = 50;
 inline constexpr int COLUMN_PRICE_WIDTH = 70;
 
 WindowMain window_main{};
+
 WindowFinance window_finance{};
 WindowShopping window_shopping{};
 WindowHospital window_hospital{};
 WindowVault window_vault{};
+
+WindowWorldDrugPrices window_world_drug_prices{};
+WindowWorldCities window_world_cities{};
+
 WindowInput window_input{};
 
 static QGroupBox *group_pocket = nullptr;
 
 void update_all_ui(const GameState &game_state) {
+  set_label_location(game_state.location);
+  set_label_health(game_state.health);
   set_label_day(game_state.day + 1);
   set_label_rank(game_state.rank);
   set_label_cash(game_state.cash);
   set_label_bank(game_state.bank);
   set_label_debt(game_state.debt);
-  set_label_location(game_state.location);
   set_label_frame_pocket(game_state.pocket, game_state.pocket_capacity);
-  if (window_main.progressbar_health) {
-    window_main.progressbar_health->setValue(game_state.health);
-  }
   if (window_main.treeview_market) {
     insert_treeview_drug(window_main.treeview_market, game_state);
   }
@@ -141,6 +144,12 @@ void set_label_frame_pocket(int npocket, int capacity) {
   }
   if (group_pocket) {
     group_pocket->setTitle(QString::fromStdString(str));
+  }
+}
+
+void set_label_health(int health) {
+  if (window_main.progressbar_health) {
+    window_main.progressbar_health->setValue(health);
   }
 }
 
@@ -766,6 +775,98 @@ void create_window_vault() {
   window_vault.window->layout()->setSizeConstraint(QLayout::SetFixedSize);
 }
 
+void create_window_world_drug_prices() {
+  if (window_world_drug_prices.window) {
+    delete window_world_drug_prices.window;
+  }
+  window_world_drug_prices.window = new QDialog(window_main.window);
+  window_world_drug_prices.window->setWindowTitle(QString::fromUtf8("World Drug Prices"));
+  window_world_drug_prices.window->setModal(true);
+
+  QVBoxLayout *vbox_main = new QVBoxLayout(window_world_drug_prices.window);
+  vbox_main->setContentsMargins(5, 5, 5, 5);
+  vbox_main->setSpacing(5);
+  
+  QHBoxLayout *hbox_top = new QHBoxLayout();
+  hbox_top->setSpacing(5);
+
+  QGroupBox *frame_drug = new QGroupBox("Drug", window_world_drug_prices.window);
+  QVBoxLayout *vbox_drug = new QVBoxLayout(frame_drug);
+  vbox_drug->setContentsMargins(5, 5, 5, 5);
+  window_world_drug_prices.treeview_drug = create_treeview_drug(true);
+  window_world_drug_prices.treeview_drug->setFixedHeight(210);
+  vbox_drug->addWidget(window_world_drug_prices.treeview_drug);
+  hbox_top->addWidget(frame_drug);
+
+  QGroupBox *frame_city = new QGroupBox("City List", window_world_drug_prices.window);
+  QVBoxLayout *vbox_city = new QVBoxLayout(frame_city);
+  vbox_city->setContentsMargins(5, 5, 5, 5);
+  window_world_drug_prices.treeview_city = create_treeview_drug(false);
+  window_world_drug_prices.treeview_city->setFixedHeight(210);
+  vbox_city->addWidget(window_world_drug_prices.treeview_city);
+  hbox_top->addWidget(frame_city);
+
+  vbox_main->addLayout(hbox_top);
+
+  QHBoxLayout *hbox_bottom = new QHBoxLayout();
+  hbox_bottom->setSpacing(3);
+  hbox_bottom->addStretch();
+
+  window_world_drug_prices.button_close = new QPushButton("&Close", window_world_drug_prices.window);
+  QObject::connect(window_world_drug_prices.button_close, &QPushButton::clicked, window_world_drug_prices.window, &QDialog::close);
+  hbox_bottom->addWidget(window_world_drug_prices.button_close);
+  
+  vbox_main->addLayout(hbox_bottom);
+
+  window_world_drug_prices.window->layout()->setSizeConstraint(QLayout::SetFixedSize);
+}
+
+void create_window_world_cities() {
+  if (window_world_cities.window) {
+    delete window_world_cities.window;
+  }
+  window_world_cities.window = new QDialog(window_main.window);
+  window_world_cities.window->setWindowTitle(QString::fromUtf8("World Cities"));
+  window_world_cities.window->setModal(true);
+
+  QVBoxLayout *vbox_main = new QVBoxLayout(window_world_cities.window);
+  vbox_main->setContentsMargins(5, 5, 5, 5);
+  vbox_main->setSpacing(5);
+
+  QHBoxLayout *hbox_top = new QHBoxLayout();
+  hbox_top->setSpacing(5);
+
+  QGroupBox *frame_city = new QGroupBox("City", window_world_cities.window);
+  QVBoxLayout *vbox_city = new QVBoxLayout(frame_city);
+  vbox_city->setContentsMargins(5, 5, 5, 5);
+  window_world_cities.treeview_city = create_treeview_drug(false);
+  window_world_cities.treeview_city->setFixedHeight(210);
+  vbox_city->addWidget(window_world_cities.treeview_city);
+  hbox_top->addWidget(frame_city);
+
+  QGroupBox *frame_drug = new QGroupBox("Drug List", window_world_cities.window);
+  QVBoxLayout *vbox_drug = new QVBoxLayout(frame_drug);
+  vbox_drug->setContentsMargins(5, 5, 5, 5);
+  window_world_cities.treeview_drug = create_treeview_drug(true);
+  window_world_cities.treeview_drug->setFixedHeight(210);
+  vbox_drug->addWidget(window_world_cities.treeview_drug);
+  hbox_top->addWidget(frame_drug);
+
+  vbox_main->addLayout(hbox_top);
+
+  QHBoxLayout *hbox_bottom = new QHBoxLayout();
+  hbox_bottom->setSpacing(3);
+  hbox_bottom->addStretch();
+
+  window_world_cities.button_close = new QPushButton("&Close", window_world_cities.window);
+  QObject::connect(window_world_cities.button_close, &QPushButton::clicked, window_world_cities.window, &QDialog::close);
+  hbox_bottom->addWidget(window_world_cities.button_close);
+
+  vbox_main->addLayout(hbox_bottom);
+
+  window_world_cities.window->layout()->setSizeConstraint(QLayout::SetFixedSize);
+}
+
 void create_window_input(const char *title,
                          const char *message,
                          const char *question) {
@@ -833,7 +934,7 @@ QMenu* create_places_menu(QPushButton *button) {
 QMenu* create_info_menu(QPushButton *button) {
   QMenu *menu = new QMenu(button);
   menu->addAction("Vaults...", []() { menuitem_info_vaults_activate_cb(); });
-  menu->addAction("World Drug Prices...", []() { menuitem_info_drug_prices_activate_cb(); });
+  menu->addAction("World Drug Prices...", []() { menuitem_info_world_drug_prices_activate_cb(); });
   menu->addAction("World Cities...", []() { menuitem_info_world_cities_activate_cb(); });
   menu->addAction("Shipment Status...", []() { menuitem_info_shipment_status_activate_cb(); });
   menu->addAction("History...", []() { menuitem_info_history_activate_cb(); });

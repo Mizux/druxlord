@@ -94,6 +94,20 @@ struct WindowVault {
   QPushButton *button_ok = nullptr;
 };
 
+struct WindowWorldDrugPrices {
+  QDialog *window = nullptr;
+  QTreeWidget *treeview_drug = nullptr;
+  QTreeWidget *treeview_city = nullptr;
+  QPushButton *button_close = nullptr;
+};
+
+struct WindowWorldCities {
+  QDialog *window = nullptr;
+  QTreeWidget *treeview_city = nullptr;
+  QTreeWidget *treeview_drug = nullptr;
+  QPushButton *button_close = nullptr;
+};
+
 struct WindowInput {
   QDialog *window = nullptr;
   QSpinBox *spinbutton_value = nullptr;
@@ -129,18 +143,28 @@ enum {
   COLUMN_INVENTORY_SELLFOR
 };
 
+// Main Window
 extern WindowMain window_main;
-extern WindowFinance window_finance;
-extern WindowShopping window_shopping;
-extern WindowHospital window_hospital;
-extern WindowVault window_vault;
-extern WindowInput window_input;
-
 void create_window_main(GameState &game_state);
+
+// Places Windows
+extern WindowFinance window_finance;
 void create_window_finance();
+extern WindowShopping window_shopping;
 void create_window_shopping();
+extern WindowHospital window_hospital;
 void create_window_hospital();
+extern WindowVault window_vault;
 void create_window_vault();
+
+// Info Widgets
+extern WindowWorldDrugPrices window_world_drug_prices;
+void create_window_world_drug_prices();
+extern WindowWorldCities window_world_cities;
+void create_window_world_cities();
+
+// Dialogs
+extern WindowInput window_input;
 void create_window_input(const char *title,
                          const char *message,
                          const char *question);
@@ -149,6 +173,7 @@ void update_all_ui(const GameState &game_state);
 void insert_treeview_drug(QTreeWidget *treeview, const GameState &game_state);
 void set_label_frame_pocket(int npocket, int capacity = 10);
 void set_label_location(int location);
+void set_label_health(int health);
 void set_label_day(int day);
 void set_label_rank(int rank);
 void set_label_cash(int value);

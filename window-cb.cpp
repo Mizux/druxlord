@@ -383,24 +383,78 @@ void menuitem_info_vaults_activate_cb() {
   QMessageBox::information(window_main.window, "Vaults", QString::fromStdString(info));
 }
 
-void menuitem_info_drug_prices_activate_cb() {
+void menuitem_info_world_drug_prices_activate_cb() {
   if (!window_main.game_state) return;
-  std::string info = "World Drug Base Prices:\n";
+
+  create_window_world_drug_prices();
+  window_world_drug_prices.treeview_drug->clear();
   for (int i = 0; i < DRUG_NUM; ++i) {
-    info += std::format("  {}: ${}\n", drug_name(drug_info[i].id), money_string(drug_info[i].price));
+    QTreeWidgetItem *item = new QTreeWidgetItem(window_world_drug_prices.treeview_drug);
+    item->setText(0, QString::fromStdString(drug_name(drug_info[i].id)));
   }
-  QMessageBox::information(window_main.window, "World Drug Prices", QString::fromStdString(info));
+
+  window_world_drug_prices.treeview_city->clear();
+  for (int i = 0; i < CITY_NUM; ++i) {
+    QTreeWidgetItem *item = new QTreeWidgetItem(window_world_drug_prices.treeview_city);
+    item->setText(0, QString::fromStdString(city_name(city_info[i].id)));
+    item->setText(1, QString::fromStdString(country_name(city_info[i].country)));
+    item->setText(2, QString::number(window_main.game_state->drug_table[0][i][window_main.game_state->day].qty));
+    item->setText(3, QString::fromStdString(money_string(window_main.game_state->drug_table[0][i][window_main.game_state->day].price)));
+  }
+
+  QObject::connect(window_world_drug_prices.treeview_drug, &QTreeWidget::itemClicked, [](QTreeWidgetItem* item) {
+    if (!window_main.game_state) return;
+    int drug_idx = item->data(0, Qt::UserRole).toInt();
+
+    window_world_drug_prices.treeview_city->clear();
+    for (int i = 0; i < CITY_NUM; ++i) {
+      QTreeWidgetItem *item = new QTreeWidgetItem(window_world_drug_prices.treeview_city);
+      item->setText(0, QString::fromStdString(city_name(city_info[i].id)));
+      item->setText(1, QString::fromStdString(country_name(city_info[i].country)));
+      item->setText(2, QString::number(window_main.game_state->drug_table[drug_idx][i][window_main.game_state->day].qty));
+      item->setText(3, QString::fromStdString(money_string(window_main.game_state->drug_table[drug_idx][i][window_main.game_state->day].price)));
+    }  
+  });
+
+  window_world_drug_prices.window->show();
+  window_world_drug_prices.window->raise();
+  window_world_drug_prices.window->activateWindow();
 }
 
 void menuitem_info_world_cities_activate_cb() {
-  std::string info = "World Cities:\n";
+  if (!window_main.game_state) return;
+
+  create_window_world_cities();
+  window_world_cities.treeview_city->clear();
   for (int i = 0; i < CITY_NUM; ++i) {
-    info += std::format("  {}, {} (Price Factor: {}%)\n",
-                        city_name(city_info[i].id),
-                        country_name(city_info[i].country),
-                        city_info[i].price_factor);
+    QTreeWidgetItem *item = new QTreeWidgetItem(window_world_cities.treeview_city);
+    item->setText(0, QString::fromStdString(city_name(city_info[i].id)));
   }
-  QMessageBox::information(window_main.window, "World Cities", QString::fromStdString(info));
+
+  window_world_cities.treeview_drug->clear();
+  for (int i = 0; i < DRUG_NUM; ++i) {
+    QTreeWidgetItem *item = new QTreeWidgetItem(window_world_cities.treeview_drug);
+    item->setText(0, QString::fromStdString(drug_name(drug_info[i].id)));
+    item->setText(1, QString::number(window_main.game_state->drug_table[i][0][window_main.game_state->day].qty));
+    item->setText(2, QString::fromStdString(money_string(window_main.game_state->drug_table[i][0][window_main.game_state->day].price)));
+  }
+
+  QObject::connect(window_world_cities.treeview_city, &QTreeWidget::itemClicked, [](QTreeWidgetItem* item) {
+    if (!window_main.game_state) return;
+    int city_idx = item->data(0, Qt::UserRole).toInt();
+    
+    window_world_cities.treeview_drug->clear();
+    for (int i = 0; i < DRUG_NUM; ++i) {
+      QTreeWidgetItem *item = new QTreeWidgetItem(window_world_cities.treeview_drug);
+      item->setText(0, QString::fromStdString(drug_name(drug_info[i].id)));
+      item->setText(1, QString::number(window_main.game_state->drug_table[i][city_idx][window_main.game_state->day].qty));
+      item->setText(2, QString::fromStdString(money_string(window_main.game_state->drug_table[i][city_idx][window_main.game_state->day].price)));
+    }  
+  });
+
+  window_world_cities.window->show();
+  window_world_cities.window->raise();
+  window_world_cities.window->activateWindow();
 }
 
 void menuitem_info_shipment_status_activate_cb() {
@@ -412,14 +466,13 @@ void menuitem_info_history_activate_cb() {
 }
 
 void window_main_button_stayhere_clicked_cb() {
-  if (window_main.game_state) {
-    window_main.game_state->stay_here();
-    update_all_ui(*window_main.game_state);
-    if (window_main.game_state->day >= DAY_NUM - 1) {
-      int score = window_main.game_state->cash + window_main.game_state->bank - window_main.game_state->debt;
-      std::string msg = std::format("That's it, the game is over! You have a final score of ${}", money_string(score));
-      QMessageBox::information(window_main.window, "Game Over", QString::fromStdString(msg));
-    }
+  if (!window_main.game_state) return;
+  window_main.game_state->stay_here();
+  update_all_ui(*window_main.game_state);
+  if (window_main.game_state->day >= DAY_NUM - 1) {
+    int score = window_main.game_state->cash + window_main.game_state->bank - window_main.game_state->debt;
+    std::string msg = std::format("That's it, the game is over! You have a final score of ${}", money_string(score));
+    QMessageBox::information(window_main.window, "Game Over", QString::fromStdString(msg));
   }
 }
 
