@@ -101,12 +101,16 @@ enum class RankType {
 struct City {
   CityType id;
   CountryType country;
+  int price_factor;
 };
 
 struct Drug {
-  int qty;
-  int price;
-  bool available;
+  int qty = 0;
+  int price = 0;
+  int target_price = 0;
+  int event_flag = 0;
+  int rumor_flag = 0;
+  bool available = false;
 };
 
 struct Weapon {
@@ -125,6 +129,15 @@ struct Rank {
   int capacity;
 };
 
+inline constexpr std::array<int, RANK_NUM> rank_capacity = {
+  10,
+  25,
+  100,
+  600,
+  3500,
+  20000
+};
+
 extern const std::array<const char*, DRUG_NUM> drug_name;
 extern const std::array<int, DRUG_NUM> drug_price;
 extern const std::array<const char*, CITY_NUM> city_name;
@@ -137,6 +150,8 @@ public:
   GameState();
 
   void stay_here();
+  void generate_drug();
+  std::string get_market_news(int loc, int d) const;
 
   Drug drug_table[DRUG_NUM][CITY_NUM][DAY_NUM]{};
   int location = 0;
@@ -148,9 +163,6 @@ public:
   int debt = 0;
   int pocket = 0;
   int pocket_capacity = 10;
-
- private:
-  void generate_drug();
 };
 
 std::string money_string(unsigned int value);

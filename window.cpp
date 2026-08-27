@@ -53,6 +53,11 @@ void insert_treeview_drug(QTreeWidget *treeview, const GameState &game_state) {
       std::string price_str = money_string(game_state.drug_table[i][j][d].price);
       QTreeWidgetItem *item = new QTreeWidgetItem(treeview);
       if (treeview->columnCount() == 4) {
+        if (game_state.drug_table[i][j][d].event_flag > 0) {
+          item->setText(COLUMN_STATUS, QString::fromUtf8("\u25B2"));
+        } else if (game_state.drug_table[i][j][d].event_flag < 0) {
+          item->setText(COLUMN_STATUS, QString::fromUtf8("\u25BC"));
+        }
         item->setText(COLUMN_NAME, QString::fromUtf8(drug_name[i]));
         item->setText(COLUMN_QTY, QString::number(game_state.drug_table[i][j][d].qty));
         item->setText(COLUMN_PRICE, QString::fromStdString(price_str));
@@ -352,6 +357,12 @@ void create_window_main(GameState &game_state) {
 
   window_main.shortcut_quit = new QShortcut(QKeySequence::Quit, window_main.window);
   QObject::connect(window_main.shortcut_quit, &QShortcut::activated, window_main.window, &QWidget::close);
+
+  insert_treeview_drug(window_main.treeview_market, game_state);
+  if (window_main.textview_information) {
+    std::string news = game_state.get_market_news(game_state.location, game_state.day);
+    window_main.textview_information->setText(QString::fromStdString(news));
+  }
 
   window_main.window->layout()->setSizeConstraint(QLayout::SetFixedSize);
 }

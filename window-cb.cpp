@@ -20,6 +20,11 @@ void window_main_button_stayhere_clicked_cb() {
     set_label_frame_pocket(window_main.game_state->pocket,
                            window_main.game_state->pocket_capacity);
     insert_treeview_drug(window_main.treeview_market, *window_main.game_state);
+    if (window_main.textview_information) {
+      std::string news = window_main.game_state->get_market_news(
+          window_main.game_state->location, window_main.game_state->day);
+      window_main.textview_information->setText(QString::fromStdString(news));
+    }
   }
 }
 
