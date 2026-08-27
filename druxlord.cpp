@@ -26,25 +26,25 @@ const std::array<const char*, DRUG_NUM> drug_name = {
   "Speed"
 };
 
-const std::array<int, DRUG_NUM> drug_price = {
-  5100, // Cocaine
-  7000, // Crack
-  3000, // Ecstasy
-  1600, // Hashish
-  7000, // Heroin
-  3000, // Ice
-  800,  // Kat
-  1000, // LSD
-  1000, // MDA
-  2000, // Morphine
-  400,  // Mushrooms
-  1500, // Opium
-  800,  // PCP
-  1000, // Peyote
-  800,  // Pot
-  1500, // Special K
-  800   // Speed
-};
+const std::array<Drug, DRUG_NUM> drug_info = {{
+  { DrugType::Cocaine,    5100 },
+  { DrugType::Crack,      7000 },
+  { DrugType::Ecstasy,    3000 },
+  { DrugType::Hashish,    1600 },
+  { DrugType::Heroin,     7000 },
+  { DrugType::Ice,        3000 },
+  { DrugType::Kat,         800 },
+  { DrugType::LSD,        1000 },
+  { DrugType::MDA,        1000 },
+  { DrugType::Morphine,   2000 },
+  { DrugType::Mushrooms,   400 },
+  { DrugType::Opium,      1500 },
+  { DrugType::PCP,         800 },
+  { DrugType::Peyote,     1000 },
+  { DrugType::Pot,         800 },
+  { DrugType::SpecialK,   1500 },
+  { DrugType::Speed,       800 }
+}};
 
 const std::array<const char*, CITY_NUM> city_name = {
   "Austin",
@@ -127,7 +127,7 @@ void GameState::generate_drug() {
   for (int j = 0; j < CITY_NUM; ++j) {
     int city_factor = city_info[j].price_factor;
     for (int i = 0; i < DRUG_NUM; ++i) {
-      int base_price = drug_price[i];
+      int base_price = drug_info[i].price;
       int mean = (base_price * city_factor) / 100;
       int half = mean / 2;
       int min_price = mean - half;

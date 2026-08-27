@@ -105,6 +105,11 @@ struct City {
 };
 
 struct Drug {
+  DrugType id;
+  int price;
+};
+
+struct DrugState {
   int qty = 0;
   int price = 0;
   int target_price = 0;
@@ -139,9 +144,10 @@ inline constexpr std::array<int, RANK_NUM> rank_capacity = {
 };
 
 extern const std::array<const char*, DRUG_NUM> drug_name;
-extern const std::array<int, DRUG_NUM> drug_price;
 extern const std::array<const char*, CITY_NUM> city_name;
 extern const std::array<const char*, COUNTRY_NUM> country_name;
+
+extern const std::array<Drug, DRUG_NUM> drug_info;
 extern const std::array<Weapon, WEAPON_NUM> weapon_info;
 extern const std::array<City, CITY_NUM> city_info;
 
@@ -153,7 +159,7 @@ public:
   void generate_drug();
   std::string get_market_news(int loc, int d) const;
 
-  Drug drug_table[DRUG_NUM][CITY_NUM][DAY_NUM]{};
+  DrugState drug_table[DRUG_NUM][CITY_NUM][DAY_NUM]{};
   int location = 0;
   int day = 0;
   int rank = 0;
