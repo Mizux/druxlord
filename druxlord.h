@@ -52,14 +52,9 @@ enum class AmmoType {
   EnergyGlobe
 };
 
-enum class ArmorType {
-  HeavyLeatherCoat,
-  BulletProofVest
-};
+enum class ArmorType { HeavyLeatherCoat, BulletProofVest };
 
-enum class ItemType {
-  CanOfNoScent
-};
+enum class ItemType { CanOfNoScent };
 
 enum class CityType {
   Austin,
@@ -79,15 +74,7 @@ enum class CityType {
   Vancouver
 };
 
-enum class CountryType {
-  Australia,
-  Canada,
-  China,
-  France,
-  UK,
-  USA,
-  Russia
-};
+enum class CountryType { Australia, Canada, China, France, UK, USA, Russia };
 
 enum class RankType {
   Wannabe,
@@ -134,14 +121,8 @@ struct Rank {
   int capacity;
 };
 
-inline constexpr std::array<int, RANK_NUM> rank_capacity = {
-  10,
-  25,
-  100,
-  600,
-  3500,
-  20000
-};
+inline constexpr std::array<int, RANK_NUM> rank_capacity = {10,  25,   100,
+                                                            600, 3500, 20000};
 
 std::string drug_name(DrugType type);
 std::string city_name(CityType type);
@@ -152,7 +133,7 @@ extern const std::array<Weapon, WEAPON_NUM> weapon_info;
 extern const std::array<City, CITY_NUM> city_info;
 
 class GameState {
-public:
+ public:
   GameState();
 
   void newgame();
@@ -162,7 +143,7 @@ public:
 
   // Player pocket inventory
   int player_qty[DRUG_NUM]{};
-  int player_price[DRUG_NUM]{}; // average cost basis
+  int player_price[DRUG_NUM]{};  // average cost basis
 
   // Vault inventory
   int vault_qty[DRUG_NUM]{};

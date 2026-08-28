@@ -1,125 +1,120 @@
 #pragma once
 
-#include <QWidget>
-#include <QDialog>
-#include <QLabel>
-#include <QPushButton>
-#include <QTreeWidget>
-#include <QTextEdit>
-#include <QProgressBar>
 #include <QCheckBox>
-#include <QRadioButton>
-#include <QSpinBox>
-#include <QSlider>
-#include <QMenu>
-#include <QShortcut>
+#include <QDialog>
 #include <QKeySequence>
+#include <QLabel>
+#include <QMenu>
+#include <QProgressBar>
+#include <QPushButton>
+#include <QRadioButton>
+#include <QShortcut>
+#include <QSlider>
+#include <QSpinBox>
+#include <QTextEdit>
+#include <QTreeWidget>
+#include <QWidget>
 
 class GameState;
 
 struct WindowMain {
-  GameState *game_state = nullptr;
-  QWidget *window = nullptr;
-  QTextEdit *textview_information = nullptr;
-  QTreeWidget *treeview_market = nullptr;
-  QTreeWidget *treeview_pocket = nullptr;
-  QPushButton *button_buy = nullptr;
-  QPushButton *button_sell = nullptr;
-  QPushButton *button_dump = nullptr;
-  QPushButton *button_places = nullptr;
-  QPushButton *button_info = nullptr;
-  QPushButton *button_stayhere = nullptr;
-  QPushButton *button_flyaway = nullptr;
-  QPushButton *button_about = nullptr;
-  QPushButton *button_docs = nullptr;
-  QPushButton *button_highscores = nullptr;
-  QPushButton *button_newgamequit = nullptr;
-  QCheckBox *checkbutton_sound = nullptr;
-  QLabel *label_pocket = nullptr;
-  QLabel *label_location = nullptr;
-  QLabel *label_day = nullptr;
-  QLabel *label_rank = nullptr;
-  QLabel *label_cash = nullptr;
-  QLabel *label_bank = nullptr;
-  QLabel *label_debt = nullptr;
-  QProgressBar *progressbar_health = nullptr;
-  QWidget *drawingarea_status = nullptr;
-  QShortcut *shortcut_quit = nullptr;
+  GameState* game_state = nullptr;
+  QWidget* window = nullptr;
+  QTextEdit* textview_information = nullptr;
+  QTreeWidget* treeview_market = nullptr;
+  QTreeWidget* treeview_pocket = nullptr;
+  QPushButton* button_buy = nullptr;
+  QPushButton* button_sell = nullptr;
+  QPushButton* button_dump = nullptr;
+  QPushButton* button_places = nullptr;
+  QPushButton* button_info = nullptr;
+  QPushButton* button_stayhere = nullptr;
+  QPushButton* button_flyaway = nullptr;
+  QPushButton* button_about = nullptr;
+  QPushButton* button_docs = nullptr;
+  QPushButton* button_highscores = nullptr;
+  QPushButton* button_newgamequit = nullptr;
+  QCheckBox* checkbutton_sound = nullptr;
+  QLabel* label_pocket = nullptr;
+  QLabel* label_location = nullptr;
+  QLabel* label_day = nullptr;
+  QLabel* label_rank = nullptr;
+  QLabel* label_cash = nullptr;
+  QLabel* label_bank = nullptr;
+  QLabel* label_debt = nullptr;
+  QProgressBar* progressbar_health = nullptr;
+  QWidget* drawingarea_status = nullptr;
+  QShortcut* shortcut_quit = nullptr;
 };
 
 struct WindowFinance {
-  QDialog *window = nullptr;
-  QRadioButton *radiobutton_depositsome = nullptr;
-  QRadioButton *radiobutton_depositall = nullptr;
-  QRadioButton *radiobutton_depositallbut = nullptr;
-  QRadioButton *radiobutton_withdrawsome = nullptr;
-  QRadioButton *radiobutton_withdrawall = nullptr;
-  QRadioButton *radiobutton_withdrawallbut = nullptr;
-  QSpinBox *spinbutton_amount = nullptr;
-  QPushButton *button_doit = nullptr;
-  QTreeWidget *treeview_loan = nullptr;
-  QLabel *label_cash = nullptr;
-  QLabel *label_bank = nullptr;
-  QLabel *label_debt = nullptr;
-  QPushButton *button_borrow = nullptr;
-  QPushButton *button_repay = nullptr;
-  QPushButton *button_done = nullptr;
+  QDialog* window = nullptr;
+  QRadioButton* radiobutton_depositsome = nullptr;
+  QRadioButton* radiobutton_depositall = nullptr;
+  QRadioButton* radiobutton_depositallbut = nullptr;
+  QRadioButton* radiobutton_withdrawsome = nullptr;
+  QRadioButton* radiobutton_withdrawall = nullptr;
+  QRadioButton* radiobutton_withdrawallbut = nullptr;
+  QSpinBox* spinbutton_amount = nullptr;
+  QPushButton* button_doit = nullptr;
+  QTreeWidget* treeview_loan = nullptr;
+  QLabel* label_cash = nullptr;
+  QLabel* label_bank = nullptr;
+  QLabel* label_debt = nullptr;
+  QPushButton* button_borrow = nullptr;
+  QPushButton* button_repay = nullptr;
+  QPushButton* button_done = nullptr;
 };
 
 struct WindowShopping {
-  QDialog *window = nullptr;
-  QTreeWidget *treeview_store = nullptr;
-  QTreeWidget *treeview_inventory = nullptr;
-  QPushButton *button_buy = nullptr;
-  QPushButton *button_sell = nullptr;
-  QPushButton *button_done = nullptr;
-  QLabel *label_cash = nullptr;
+  QDialog* window = nullptr;
+  QTreeWidget* treeview_store = nullptr;
+  QTreeWidget* treeview_inventory = nullptr;
+  QPushButton* button_buy = nullptr;
+  QPushButton* button_sell = nullptr;
+  QPushButton* button_done = nullptr;
+  QLabel* label_cash = nullptr;
 };
 
 struct WindowHospital {
-  QDialog *window = nullptr;
-  QProgressBar *progressbar_health = nullptr;
-  QSlider *scalebutton_health = nullptr;
-  QLabel *label_cash = nullptr;
-  QLabel *label_cost = nullptr;
-  QPushButton *button_ok = nullptr;
+  QDialog* window = nullptr;
+  QProgressBar* progressbar_health = nullptr;
+  QSlider* scalebutton_health = nullptr;
+  QLabel* label_cash = nullptr;
+  QLabel* label_cost = nullptr;
+  QPushButton* button_ok = nullptr;
 };
 
 struct WindowVault {
-  QDialog *window = nullptr;
-  QTreeWidget *treeview_pocket = nullptr;
-  QTreeWidget *treeview_vault = nullptr;
-  QPushButton *button_intovault = nullptr;
-  QPushButton *button_fromvault = nullptr;
-  QPushButton *button_ok = nullptr;
+  QDialog* window = nullptr;
+  QTreeWidget* treeview_pocket = nullptr;
+  QTreeWidget* treeview_vault = nullptr;
+  QPushButton* button_intovault = nullptr;
+  QPushButton* button_fromvault = nullptr;
+  QPushButton* button_ok = nullptr;
 };
 
 struct WindowWorldDrugPrices {
-  QDialog *window = nullptr;
-  QTreeWidget *treeview_drug = nullptr;
-  QTreeWidget *treeview_city = nullptr;
-  QPushButton *button_close = nullptr;
+  QDialog* window = nullptr;
+  QTreeWidget* treeview_drug = nullptr;
+  QTreeWidget* treeview_city = nullptr;
+  QPushButton* button_close = nullptr;
 };
 
 struct WindowWorldCities {
-  QDialog *window = nullptr;
-  QTreeWidget *treeview_city = nullptr;
-  QTreeWidget *treeview_drug = nullptr;
-  QPushButton *button_close = nullptr;
+  QDialog* window = nullptr;
+  QTreeWidget* treeview_city = nullptr;
+  QTreeWidget* treeview_drug = nullptr;
+  QPushButton* button_close = nullptr;
 };
 
 struct WindowInput {
-  QDialog *window = nullptr;
-  QSpinBox *spinbutton_value = nullptr;
-  QPushButton *button_ok = nullptr;
+  QDialog* window = nullptr;
+  QSpinBox* spinbutton_value = nullptr;
+  QPushButton* button_ok = nullptr;
 };
 
-enum {
-  COLUMN_STATUS,
-  COLUMN_NAME,
-  COLUMN_QTY,
-  COLUMN_PRICE
-};
+enum { COLUMN_STATUS, COLUMN_NAME, COLUMN_QTY, COLUMN_PRICE };
 
 enum {
   COLUMN_LOAN_NAME,
@@ -130,11 +125,7 @@ enum {
   COLUMN_LOAN_DAYLEFT
 };
 
-enum {
-  COLUMN_STORE_NAME,
-  COLUMN_STORE_TYPE,
-  COLUMN_STORE_PRICE
-};
+enum { COLUMN_STORE_NAME, COLUMN_STORE_TYPE, COLUMN_STORE_PRICE };
 
 enum {
   COLUMN_INVENTORY_NAME,
@@ -145,7 +136,7 @@ enum {
 
 // Main Window
 extern WindowMain window_main;
-void create_window_main(GameState &game_state);
+void create_window_main(GameState& game_state);
 
 // Places Windows
 extern WindowFinance window_finance;
@@ -165,11 +156,10 @@ void create_window_world_cities();
 
 // Dialogs
 extern WindowInput window_input;
-void create_window_input(const char *title,
-                         const char *message,
-                         const char *question);
+void create_window_input(const char* title, const char* message,
+                         const char* question);
 
-void update_all_ui(const GameState &game_state);
+void update_all_ui(const GameState& game_state);
 
 void fill_treeview_market(QTreeWidget* treeview, const GameState& game_state);
 void fill_treeview_pocket(QTreeWidget* treeview, const GameState& game_state);
@@ -186,5 +176,5 @@ void set_label_rank(int rank);
 void set_label_cash(int value);
 void set_label_bank(int value);
 void set_label_debt(int value);
-QMenu* create_places_menu(QPushButton *button);
-QMenu* create_info_menu(QPushButton *button);
+QMenu* create_places_menu(QPushButton* button);
+QMenu* create_info_menu(QPushButton* button);

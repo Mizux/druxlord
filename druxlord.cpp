@@ -8,110 +8,146 @@
 
 std::string drug_name(DrugType type) {
   switch (type) {
-    case DrugType::Cocaine:   return "Cocaine";
-    case DrugType::Crack:     return "Crack";
-    case DrugType::Ecstasy:   return "Ecstasy";
-    case DrugType::Hashish:   return "Hashish";
-    case DrugType::Heroin:    return "Heroin";
-    case DrugType::Ice:       return "Ice";
-    case DrugType::Kat:       return "Kat";
-    case DrugType::LSD:       return "LSD";
-    case DrugType::MDA:       return "MDA";
-    case DrugType::Morphine:  return "Morphine";
-    case DrugType::Mushrooms: return "Mushrooms";
-    case DrugType::Opium:     return "Opium";
-    case DrugType::PCP:       return "PCP";
-    case DrugType::Peyote:    return "Peyote";
-    case DrugType::Pot:       return "Pot";
-    case DrugType::SpecialK:  return "Special K";
-    case DrugType::Speed:     return "Speed";
+    case DrugType::Cocaine:
+      return "Cocaine";
+    case DrugType::Crack:
+      return "Crack";
+    case DrugType::Ecstasy:
+      return "Ecstasy";
+    case DrugType::Hashish:
+      return "Hashish";
+    case DrugType::Heroin:
+      return "Heroin";
+    case DrugType::Ice:
+      return "Ice";
+    case DrugType::Kat:
+      return "Kat";
+    case DrugType::LSD:
+      return "LSD";
+    case DrugType::MDA:
+      return "MDA";
+    case DrugType::Morphine:
+      return "Morphine";
+    case DrugType::Mushrooms:
+      return "Mushrooms";
+    case DrugType::Opium:
+      return "Opium";
+    case DrugType::PCP:
+      return "PCP";
+    case DrugType::Peyote:
+      return "Peyote";
+    case DrugType::Pot:
+      return "Pot";
+    case DrugType::SpecialK:
+      return "Special K";
+    case DrugType::Speed:
+      return "Speed";
   }
   return "Unknown";
 }
 
 std::string city_name(CityType type) {
   switch (type) {
-    case CityType::Austin:       return "Austin";
-    case CityType::Beijing:      return "Beijing";
-    case CityType::Boston:       return "Boston";
-    case CityType::Detroit:      return "Detroit";
-    case CityType::London:       return "London";
-    case CityType::LosAngeles:   return "Los Angeles";
-    case CityType::Miami:        return "Miami";
-    case CityType::Moscow:       return "Moscow";
-    case CityType::NewYork:      return "New York";
-    case CityType::Paris:        return "Paris";
-    case CityType::SanFrancisco: return "San Francisco";
-    case CityType::StPetersburg: return "St Petersburg";
-    case CityType::Sydney:       return "Sydney";
-    case CityType::Toronto:      return "Toronto";
-    case CityType::Vancouver:    return "Vancouver";
+    case CityType::Austin:
+      return "Austin";
+    case CityType::Beijing:
+      return "Beijing";
+    case CityType::Boston:
+      return "Boston";
+    case CityType::Detroit:
+      return "Detroit";
+    case CityType::London:
+      return "London";
+    case CityType::LosAngeles:
+      return "Los Angeles";
+    case CityType::Miami:
+      return "Miami";
+    case CityType::Moscow:
+      return "Moscow";
+    case CityType::NewYork:
+      return "New York";
+    case CityType::Paris:
+      return "Paris";
+    case CityType::SanFrancisco:
+      return "San Francisco";
+    case CityType::StPetersburg:
+      return "St Petersburg";
+    case CityType::Sydney:
+      return "Sydney";
+    case CityType::Toronto:
+      return "Toronto";
+    case CityType::Vancouver:
+      return "Vancouver";
   }
   return "Unknown";
 }
 
 std::string country_name(CountryType type) {
   switch (type) {
-    case CountryType::Australia: return "Australia";
-    case CountryType::Canada:    return "Canada";
-    case CountryType::China:     return "China";
-    case CountryType::France:    return "France";
-    case CountryType::UK:        return "UK";
-    case CountryType::USA:       return "USA";
-    case CountryType::Russia:    return "Russia";
+    case CountryType::Australia:
+      return "Australia";
+    case CountryType::Canada:
+      return "Canada";
+    case CountryType::China:
+      return "China";
+    case CountryType::France:
+      return "France";
+    case CountryType::UK:
+      return "UK";
+    case CountryType::USA:
+      return "USA";
+    case CountryType::Russia:
+      return "Russia";
   }
   return "Unknown";
 }
 
-const std::array<Drug, DRUG_NUM> drug_info = {{
-  { DrugType::Cocaine,    5100 },
-  { DrugType::Crack,      7000 },
-  { DrugType::Ecstasy,    3000 },
-  { DrugType::Hashish,    1600 },
-  { DrugType::Heroin,     7000 },
-  { DrugType::Ice,        3000 },
-  { DrugType::Kat,         800 },
-  { DrugType::LSD,        1000 },
-  { DrugType::MDA,        1000 },
-  { DrugType::Morphine,   2000 },
-  { DrugType::Mushrooms,   400 },
-  { DrugType::Opium,      1500 },
-  { DrugType::PCP,         800 },
-  { DrugType::Peyote,     1000 },
-  { DrugType::Pot,         800 },
-  { DrugType::SpecialK,   1500 },
-  { DrugType::Speed,       800 }
-}};
+const std::array<Drug, DRUG_NUM> drug_info = {{{DrugType::Cocaine, 5100},
+                                               {DrugType::Crack, 7000},
+                                               {DrugType::Ecstasy, 3000},
+                                               {DrugType::Hashish, 1600},
+                                               {DrugType::Heroin, 7000},
+                                               {DrugType::Ice, 3000},
+                                               {DrugType::Kat, 800},
+                                               {DrugType::LSD, 1000},
+                                               {DrugType::MDA, 1000},
+                                               {DrugType::Morphine, 2000},
+                                               {DrugType::Mushrooms, 400},
+                                               {DrugType::Opium, 1500},
+                                               {DrugType::PCP, 800},
+                                               {DrugType::Peyote, 1000},
+                                               {DrugType::Pot, 800},
+                                               {DrugType::SpecialK, 1500},
+                                               {DrugType::Speed, 800}}};
 
-const std::array<Weapon, WEAPON_NUM> weapon_info = {{
-  { WeaponType::Knife,           AmmoType::None,              20, false, false, 100    },
-  { WeaponType::Pistol,          AmmoType::PistolBullet,     40, false, true,  500    },
-  { WeaponType::Shotgun,         AmmoType::ShotgunShell,     50, false, true,  2500   },
-  { WeaponType::MachineGun,      AmmoType::MachineGunBullet, 60, true,  true,  4000   },
-  { WeaponType::Flamethrower,    AmmoType::GasCanister,      70, true,  true,  7500   },
-  { WeaponType::Dynamite,        AmmoType::None,              35, true,  false, 250    },
-  { WeaponType::Grenade,         AmmoType::None,              50, true,  false, 500    },
-  { WeaponType::RocketLauncher,  AmmoType::Rocket,           70, true,  true,  10000  },
-  { WeaponType::AreaDisrupter,   AmmoType::EnergyGlobe,      99, true,  true,  500000 }
-}};
+const std::array<Weapon, WEAPON_NUM> weapon_info = {
+    {{WeaponType::Knife, AmmoType::None, 20, false, false, 100},
+     {WeaponType::Pistol, AmmoType::PistolBullet, 40, false, true, 500},
+     {WeaponType::Shotgun, AmmoType::ShotgunShell, 50, false, true, 2500},
+     {WeaponType::MachineGun, AmmoType::MachineGunBullet, 60, true, true, 4000},
+     {WeaponType::Flamethrower, AmmoType::GasCanister, 70, true, true, 7500},
+     {WeaponType::Dynamite, AmmoType::None, 35, true, false, 250},
+     {WeaponType::Grenade, AmmoType::None, 50, true, false, 500},
+     {WeaponType::RocketLauncher, AmmoType::Rocket, 70, true, true, 10000},
+     {WeaponType::AreaDisrupter, AmmoType::EnergyGlobe, 99, true, true,
+      500000}}};
 
-const std::array<City, CITY_NUM> city_info = {{
-  { CityType::Austin,        CountryType::USA,       100 },
-  { CityType::Beijing,       CountryType::China,     190 },
-  { CityType::Boston,        CountryType::USA,       120 },
-  { CityType::Detroit,       CountryType::USA,        80 },
-  { CityType::London,        CountryType::UK,        110 },
-  { CityType::LosAngeles,    CountryType::USA,       110 },
-  { CityType::Miami,         CountryType::USA,        90 },
-  { CityType::Moscow,        CountryType::Russia,    160 },
-  { CityType::NewYork,       CountryType::USA,       100 },
-  { CityType::Paris,         CountryType::France,     90 },
-  { CityType::SanFrancisco,  CountryType::USA,        80 },
-  { CityType::StPetersburg,  CountryType::Russia,    150 },
-  { CityType::Sydney,        CountryType::Australia, 110 },
-  { CityType::Toronto,       CountryType::Canada,    100 },
-  { CityType::Vancouver,     CountryType::Canada,    100 }
-}};
+const std::array<City, CITY_NUM> city_info = {
+    {{CityType::Austin, CountryType::USA, 100},
+     {CityType::Beijing, CountryType::China, 190},
+     {CityType::Boston, CountryType::USA, 120},
+     {CityType::Detroit, CountryType::USA, 80},
+     {CityType::London, CountryType::UK, 110},
+     {CityType::LosAngeles, CountryType::USA, 110},
+     {CityType::Miami, CountryType::USA, 90},
+     {CityType::Moscow, CountryType::Russia, 160},
+     {CityType::NewYork, CountryType::USA, 100},
+     {CityType::Paris, CountryType::France, 90},
+     {CityType::SanFrancisco, CountryType::USA, 80},
+     {CityType::StPetersburg, CountryType::Russia, 150},
+     {CityType::Sydney, CountryType::Australia, 110},
+     {CityType::Toronto, CountryType::Canada, 100},
+     {CityType::Vancouver, CountryType::Canada, 100}}};
 
 std::string money_string(unsigned int value) {
   std::string s = std::to_string(value);
@@ -123,9 +159,7 @@ std::string money_string(unsigned int value) {
   return s;
 }
 
-GameState::GameState() {
-  newgame();
-}
+GameState::GameState() { newgame(); }
 
 void GameState::newgame() {
   location = 0;
@@ -163,7 +197,8 @@ void GameState::generate_drug() {
       int target_price = half + static_cast<int>(gen() % mean);
       int current_price = half + static_cast<int>(gen() % mean);
 
-      double price_ratio = static_cast<double>(current_price - min_price) / static_cast<double>(mean);
+      double price_ratio = static_cast<double>(current_price - min_price) /
+                           static_cast<double>(mean);
       double target_qty = cap * (1.0 - price_ratio);
       int qty = std::max(0, static_cast<int>(target_qty));
 
@@ -195,7 +230,7 @@ void GameState::generate_drug() {
 
       // Subsequent days (1 to DAY_NUM - 1)
       for (int d = 1; d < DAY_NUM; ++d) {
-        const auto &prev = drug_table[i][j][d - 1];
+        const auto& prev = drug_table[i][j][d - 1];
 
         // Step 2: Price Drift Towards Dynamic Target
         int drift_current_price = prev.price;
@@ -218,9 +253,12 @@ void GameState::generate_drug() {
         }
 
         // Step 4: Supply & Demand Curve
-        double new_price_ratio = static_cast<double>(new_current_price - min_price) / static_cast<double>(mean);
+        double new_price_ratio =
+            static_cast<double>(new_current_price - min_price) /
+            static_cast<double>(mean);
         double new_target_qty = cap * (1.0 - new_price_ratio);
-        int new_qty = std::max(0, static_cast<int>((new_target_qty + prev.qty) / 2.0));
+        int new_qty =
+            std::max(0, static_cast<int>((new_target_qty + prev.qty) / 2.0));
 
         // Step 5: Market Events (Spikes and Crashes)
         int day_event_flag = 0;
@@ -229,14 +267,16 @@ void GameState::generate_drug() {
             // Price Spike (+1)
             day_event_flag = 1;
             int multiplier = static_cast<int>(gen() % 5) + 5;
-            new_current_price = (mean + static_cast<int>(gen() % half)) * multiplier;
+            new_current_price =
+                (mean + static_cast<int>(gen() % half)) * multiplier;
             int reduction = static_cast<int>(gen() % 5) + 2;
             new_qty = new_qty / reduction;
           } else {
             // Price Crash (-1)
             day_event_flag = -1;
             int divisor = static_cast<int>(gen() % 5) + 5;
-            new_current_price = (mean - static_cast<int>(gen() % half)) / divisor;
+            new_current_price =
+                (mean - static_cast<int>(gen() % half)) / divisor;
             int flood = static_cast<int>(gen() % 5) + 2;
             new_qty = new_qty * flood;
           }
@@ -283,10 +323,16 @@ std::string GameState::get_market_news(int loc, int d) const {
   for (int i = 0; i < DRUG_NUM; ++i) {
     if (drug_table[i][loc][d].event_flag == 1) {
       if (!news.empty()) news += "\n\n";
-      news += std::format("Prices go through the roof!\nCops burst into a {} warehouse, seizing everything.", drug_name(drug_info[i].id));
+      news += std::format(
+          "Prices go through the roof!\nCops burst into a {} "
+          "warehouse, seizing everything.",
+          drug_name(drug_info[i].id));
     } else if (drug_table[i][loc][d].event_flag == -1) {
       if (!news.empty()) news += "\n\n";
-      news += std::format("Prices plummet!\nCrates of {} were discovered floating in the ocean.", drug_name(drug_info[i].id));
+      news += std::format(
+          "Prices plummet!\nCrates of {} were discovered "
+          "floating in the ocean.",
+          drug_name(drug_info[i].id));
     }
   }
   return news;
