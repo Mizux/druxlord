@@ -387,47 +387,16 @@ void menuitem_info_world_drug_prices_activate_cb() {
   if (!window_main.game_state) return;
 
   create_window_world_drug_prices();
-
-  window_world_drug_prices.treeview_city->clear();
-  for (int i = 0; i < CITY_NUM; ++i) {
-    QTreeWidgetItem *item = new QTreeWidgetItem(window_world_drug_prices.treeview_city);
-    std::string text = std::format("{}, {}", city_name(city_info[i].id),
-                                   country_name(city_info[i].country));
-    item->setText(0, QString::fromStdString(text));
-    item->setText(
-        1, QString::number(window_main.game_state
-                               ->drug_table[0][i][window_main.game_state->day]
-                               .qty));
-    item->setText(2, QString::fromStdString(money_string(
-                         window_main.game_state
-                             ->drug_table[0][i][window_main.game_state->day]
-                             .price)));
-  }
+  fill_treeview_city_list(window_world_drug_prices.treeview_city,
+                          window_main.game_state, 0);
 
   QObject::connect(
       window_world_drug_prices.treeview_drug, &QTreeWidget::itemClicked,
       [&](QTreeWidgetItem* item) {
         if (!window_main.game_state) return;
         int drug_idx = item->data(0, Qt::UserRole).toInt();
-
-        window_world_drug_prices.treeview_city->clear();
-        for (int i = 0; i < CITY_NUM; ++i) {
-          QTreeWidgetItem* item =
-              new QTreeWidgetItem(window_world_drug_prices.treeview_city);
-          std::string text = std::format("{}, {}", city_name(city_info[i].id),
-                                         country_name(city_info[i].country));
-          item->setText(0, QString::fromStdString(text));
-          item->setText(
-              1, QString::number(
-                     window_main.game_state
-                         ->drug_table[drug_idx][i][window_main.game_state->day]
-                         .qty));
-          item->setText(
-              2, QString::fromStdString(money_string(
-                     window_main.game_state
-                         ->drug_table[drug_idx][i][window_main.game_state->day]
-                         .price)));
-        }
+        fill_treeview_city_list(window_world_drug_prices.treeview_city,
+                                window_main.game_state, drug_idx);
       });
 
   window_world_drug_prices.window->show();
@@ -439,42 +408,14 @@ void menuitem_info_world_cities_activate_cb() {
   if (!window_main.game_state) return;
 
   create_window_world_cities();
-
-  window_world_cities.treeview_drug->clear();
-  for (int i = 0; i < DRUG_NUM; ++i) {
-    QTreeWidgetItem *item = new QTreeWidgetItem(window_world_cities.treeview_drug);
-    item->setText(0, QString::fromStdString(drug_name(drug_info[i].id)));
-    item->setText(
-        1, QString::number(window_main.game_state
-                               ->drug_table[i][window_main.game_state->location]
-                                           [window_main.game_state->day]
-                               .qty));
-    item->setText(2, QString::fromStdString(money_string(
-                         window_main.game_state
-                             ->drug_table[i][window_main.game_state->location]
-                                         [window_main.game_state->day]
-                             .price)));
-  }
+  fill_treeview_drug_list(window_world_cities.treeview_drug,
+                          window_main.game_state, 0);
 
   QObject::connect(window_world_cities.treeview_city, &QTreeWidget::itemClicked, [](QTreeWidgetItem* item) {
     if (!window_main.game_state) return;
     int city_idx = item->data(0, Qt::UserRole).toInt();
-    
-    window_world_cities.treeview_drug->clear();
-    for (int i = 0; i < DRUG_NUM; ++i) {
-      QTreeWidgetItem *item = new QTreeWidgetItem(window_world_cities.treeview_drug);
-      item->setText(0, QString::fromStdString(drug_name(drug_info[i].id)));
-      item->setText(
-          1, QString::number(
-                 window_main.game_state
-                     ->drug_table[i][city_idx][window_main.game_state->day]
-                     .qty));
-      item->setText(
-          2, QString::fromStdString(money_string(
-                 window_main.game_state
-                     ->drug_table[i][city_idx][window_main.game_state->day]
-                     .price)));
-    }  
+    fill_treeview_drug_list(window_world_cities.treeview_drug,
+                            window_main.game_state, city_idx);
   });
 
   window_world_cities.window->show();

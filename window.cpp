@@ -57,10 +57,10 @@ void update_all_ui(const GameState &game_state) {
   set_label_debt(game_state.debt);
   set_label_frame_pocket(game_state.pocket, game_state.pocket_capacity);
   if (window_main.treeview_market) {
-    fill_treeview_drug(window_main.treeview_market, game_state);
+    fill_treeview_market(window_main.treeview_market, game_state);
   }
   if (window_main.treeview_pocket) {
-    fill_treeview_drug(window_main.treeview_pocket, game_state);
+    fill_treeview_pocket(window_main.treeview_pocket, game_state);
   }
   if (window_main.textview_information) {
     std::string news = game_state.get_market_news(game_state.location, game_state.day);
@@ -68,44 +68,91 @@ void update_all_ui(const GameState &game_state) {
   }
 }
 
-void fill_treeview_drug(QTreeWidget* treeview, const GameState& game_state) {
+void fill_treeview_market(QTreeWidget* treeview, const GameState& game_state) {
   if (!treeview) return;
   treeview->clear();
-  int j = game_state.location;
-  int d = game_state.day;
+  int loc = game_state.location;
+  int day = game_state.day;
 
-  if (treeview->columnCount() == 4) {
-    for (int i = 0; i < DRUG_NUM; ++i) {
-      if (game_state.drug_table[i][j][d].available) {
-        std::string price_str = money_string(game_state.drug_table[i][j][d].price);
-        QTreeWidgetItem *item = new QTreeWidgetItem(treeview);
-        std::string name_str = drug_name(drug_info[i].id);
-        if (game_state.drug_table[i][j][d].event_flag > 0) {
-          item->setText(COLUMN_STATUS, QString::fromUtf8("\u25B2"));
-        } else if (game_state.drug_table[i][j][d].event_flag < 0) {
-          item->setText(COLUMN_STATUS, QString::fromUtf8("\u25BC"));
-        }
-        item->setText(COLUMN_NAME, QString::fromStdString(name_str));
-        item->setText(COLUMN_QTY, QString::number(game_state.drug_table[i][j][d].qty));
-        item->setText(COLUMN_PRICE, QString::fromStdString(price_str));
-        item->setData(COLUMN_NAME, Qt::UserRole, i);
-        item->setTextAlignment(COLUMN_QTY, Qt::AlignRight | Qt::AlignVCenter);
-        item->setTextAlignment(COLUMN_PRICE, Qt::AlignRight | Qt::AlignVCenter);
+  for (int drug_idx = 0; drug_idx < DRUG_NUM; ++drug_idx) {
+    if (game_state.drug_table[drug_idx][loc][day].available) {
+      std::string price_str =
+          money_string(game_state.drug_table[drug_idx][loc][day].price);
+      QTreeWidgetItem* item = new QTreeWidgetItem(treeview);
+      std::string name_str = drug_name(drug_info[drug_idx].id);
+      if (game_state.drug_table[drug_idx][loc][day].event_flag > 0) {
+        item->setText(COLUMN_STATUS, QString::fromUtf8("\u25B2"));
+      } else if (game_state.drug_table[drug_idx][loc][day].event_flag < 0) {
+        item->setText(COLUMN_STATUS, QString::fromUtf8("\u25BC"));
       }
+      item->setText(COLUMN_NAME, QString::fromStdString(name_str));
+      item->setText(
+          COLUMN_QTY,
+          QString::number(game_state.drug_table[drug_idx][loc][day].qty));
+      item->setText(COLUMN_PRICE, QString::fromStdString(price_str));
+      item->setData(COLUMN_NAME, Qt::UserRole, drug_idx);
+      item->setTextAlignment(COLUMN_QTY, Qt::AlignRight | Qt::AlignVCenter);
+      item->setTextAlignment(COLUMN_PRICE, Qt::AlignRight | Qt::AlignVCenter);
     }
-  } else {
-    for (int i = 0; i < DRUG_NUM; ++i) {
-      if (game_state.player_qty[i] > 0) {
-        QTreeWidgetItem *item = new QTreeWidgetItem(treeview);
-        std::string name_str = drug_name(drug_info[i].id);
-        item->setText(0, QString::fromStdString(name_str));
-        item->setText(1, QString::number(game_state.player_qty[i]));
-        item->setText(2, QString::fromStdString(money_string(game_state.player_price[i])));
-        item->setData(0, Qt::UserRole, i);
-        item->setTextAlignment(1, Qt::AlignRight | Qt::AlignVCenter);
-        item->setTextAlignment(2, Qt::AlignRight | Qt::AlignVCenter);
-      }
+  }
+}
+
+void fill_treeview_pocket(QTreeWidget* treeview, const GameState& game_state) {
+  if (!treeview) return;
+  treeview->clear();
+
+  for (int drug_idx = 0; drug_idx < DRUG_NUM; ++drug_idx) {
+    if (game_state.player_qty[drug_idx] > 0) {
+      QTreeWidgetItem* item = new QTreeWidgetItem(treeview);
+      std::string name_str = drug_name(drug_info[drug_idx].id);
+      item->setText(0, QString::fromStdString(name_str));
+      item->setText(1, QString::number(game_state.player_qty[drug_idx]));
+      item->setText(2, QString::fromStdString(
+                           money_string(game_state.player_price[drug_idx])));
+      item->setData(0, Qt::UserRole, drug_idx);
+      item->setTextAlignment(1, Qt::AlignRight | Qt::AlignVCenter);
+      item->setTextAlignment(2, Qt::AlignRight | Qt::AlignVCenter);
     }
+  }
+}
+
+void fill_treeview_city_list(QTreeWidget* treeview, GameState* game_state,
+                             int drug_idx) {
+  if (!treeview || !game_state) return;
+  treeview->clear();
+  int day = game_state->day;
+  for (int city_idx = 0; city_idx < CITY_NUM; ++city_idx) {
+    QTreeWidgetItem* item = new QTreeWidgetItem(treeview);
+    std::string text = std::format("{}, {}", city_name(city_info[city_idx].id),
+                                   country_name(city_info[city_idx].country));
+    item->setText(0, QString::fromStdString(text));
+    item->setText(1, QString::number(
+                         game_state->drug_table[drug_idx][city_idx][day].qty));
+    item->setText(2,
+                  QString::fromStdString(money_string(
+                      game_state->drug_table[drug_idx][city_idx][day].price)));
+    item->setTextAlignment(1, Qt::AlignRight | Qt::AlignVCenter);
+    item->setTextAlignment(2, Qt::AlignRight | Qt::AlignVCenter);
+  }
+}
+
+void fill_treeview_drug_list(QTreeWidget* treeview, GameState* game_state,
+                             int city_idx) {
+  if (!treeview || !game_state) return;
+  treeview->clear();
+  int day = game_state->day;
+  for (int drug_idx = 0; drug_idx < DRUG_NUM; ++drug_idx) {
+    QTreeWidgetItem* item = new QTreeWidgetItem(treeview);
+    std::string name_str = drug_name(drug_info[drug_idx].id);
+    item->setText(0, QString::fromStdString(name_str));
+    item->setText(1, QString::number(
+                         game_state->drug_table[drug_idx][city_idx][day].qty));
+    item->setText(2,
+                  QString::fromStdString(money_string(
+                      game_state->drug_table[drug_idx][city_idx][day].price)));
+    item->setData(0, Qt::UserRole, drug_idx);
+    item->setTextAlignment(1, Qt::AlignRight | Qt::AlignVCenter);
+    item->setTextAlignment(2, Qt::AlignRight | Qt::AlignVCenter);
   }
 }
 

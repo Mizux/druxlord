@@ -170,7 +170,14 @@ void create_window_input(const char *title,
                          const char *question);
 
 void update_all_ui(const GameState &game_state);
-void fill_treeview_drug(QTreeWidget* treeview, const GameState& game_state);
+
+void fill_treeview_market(QTreeWidget* treeview, const GameState& game_state);
+void fill_treeview_pocket(QTreeWidget* treeview, const GameState& game_state);
+void fill_treeview_city_list(QTreeWidget* treeview, GameState* game_state,
+                             int drug_idx);
+void fill_treeview_drug_list(QTreeWidget* treeview, GameState* game_state,
+                             int city_idx);
+
 void set_label_frame_pocket(int npocket, int capacity = 10);
 void set_label_location(int location);
 void set_label_health(int health);
