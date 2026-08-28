@@ -129,9 +129,9 @@ GameState::GameState() {
 
 void GameState::newgame() {
   location = 0;
+  health = 100;
   day = 0;
   rank = 0;
-  health = 100;
   cash = 2000;
   bank = 0;
   debt = 1000;

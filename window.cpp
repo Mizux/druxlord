@@ -57,10 +57,10 @@ void update_all_ui(const GameState &game_state) {
   set_label_debt(game_state.debt);
   set_label_frame_pocket(game_state.pocket, game_state.pocket_capacity);
   if (window_main.treeview_market) {
-    insert_treeview_drug(window_main.treeview_market, game_state);
+    fill_treeview_drug(window_main.treeview_market, game_state);
   }
   if (window_main.treeview_pocket) {
-    insert_treeview_drug(window_main.treeview_pocket, game_state);
+    fill_treeview_drug(window_main.treeview_pocket, game_state);
   }
   if (window_main.textview_information) {
     std::string news = game_state.get_market_news(game_state.location, game_state.day);
@@ -68,7 +68,7 @@ void update_all_ui(const GameState &game_state) {
   }
 }
 
-void insert_treeview_drug(QTreeWidget *treeview, const GameState &game_state) {
+void fill_treeview_drug(QTreeWidget* treeview, const GameState& game_state) {
   if (!treeview) return;
   treeview->clear();
   int j = game_state.location;
@@ -134,6 +134,54 @@ static QTreeWidget* create_treeview_drug(bool with_status) {
     treeview->headerItem()->setTextAlignment(2, Qt::AlignRight | Qt::AlignVCenter);
   }
 
+  return treeview;
+}
+
+static QTreeWidget* create_treeview_drug_names() {
+  QTreeWidget* treeview = new QTreeWidget();
+  treeview->setRootIsDecorated(false);
+  treeview->setUniformRowHeights(true);
+  treeview->header()->setStretchLastSection(false);
+  treeview->setColumnCount(1);
+  treeview->setHeaderLabels({"Name"});
+  treeview->setColumnWidth(0, COLUMN_NAME_WIDTH);
+  return treeview;
+}
+
+static QTreeWidget* create_treeview_city_list() {
+  QTreeWidget* treeview = new QTreeWidget();
+  treeview->setRootIsDecorated(false);
+  treeview->setUniformRowHeights(true);
+  treeview->header()->setStretchLastSection(false);
+  treeview->setColumnCount(3);
+  treeview->setHeaderLabels({"City", "Qty", "Price"});
+  treeview->setColumnWidth(0, COLUMN_NAME_WIDTH);
+  treeview->setColumnWidth(1, COLUMN_QTY_WIDTH);
+  treeview->setColumnWidth(2, COLUMN_PRICE_WIDTH);
+  return treeview;
+}
+
+static QTreeWidget* create_treeview_city_names() {
+  QTreeWidget* treeview = new QTreeWidget();
+  treeview->setRootIsDecorated(false);
+  treeview->setUniformRowHeights(true);
+  treeview->header()->setStretchLastSection(false);
+  treeview->setColumnCount(1);
+  treeview->setHeaderLabels({"Name"});
+  treeview->setColumnWidth(0, COLUMN_NAME_WIDTH);
+  return treeview;
+}
+
+static QTreeWidget* create_treeview_drug_list() {
+  QTreeWidget* treeview = new QTreeWidget();
+  treeview->setRootIsDecorated(false);
+  treeview->setUniformRowHeights(true);
+  treeview->header()->setStretchLastSection(false);
+  treeview->setColumnCount(3);
+  treeview->setHeaderLabels({"Drug", "Qty", "Price"});
+  treeview->setColumnWidth(0, COLUMN_NAME_WIDTH);
+  treeview->setColumnWidth(1, COLUMN_QTY_WIDTH);
+  treeview->setColumnWidth(2, COLUMN_PRICE_WIDTH);
   return treeview;
 }
 
@@ -793,15 +841,22 @@ void create_window_world_drug_prices() {
   QGroupBox *frame_drug = new QGroupBox("Drug", window_world_drug_prices.window);
   QVBoxLayout *vbox_drug = new QVBoxLayout(frame_drug);
   vbox_drug->setContentsMargins(5, 5, 5, 5);
-  window_world_drug_prices.treeview_drug = create_treeview_drug(true);
+  window_world_drug_prices.treeview_drug = create_treeview_drug_names();
   window_world_drug_prices.treeview_drug->setFixedHeight(210);
+  window_world_drug_prices.treeview_drug->clear();
+  for (int i = 0; i < DRUG_NUM; ++i) {
+    QTreeWidgetItem* item =
+        new QTreeWidgetItem(window_world_drug_prices.treeview_drug);
+    item->setData(0, Qt::UserRole, i);
+    item->setText(0, QString::fromStdString(drug_name(drug_info[i].id)));
+  }
   vbox_drug->addWidget(window_world_drug_prices.treeview_drug);
   hbox_top->addWidget(frame_drug);
 
   QGroupBox *frame_city = new QGroupBox("City List", window_world_drug_prices.window);
   QVBoxLayout *vbox_city = new QVBoxLayout(frame_city);
   vbox_city->setContentsMargins(5, 5, 5, 5);
-  window_world_drug_prices.treeview_city = create_treeview_drug(false);
+  window_world_drug_prices.treeview_city = create_treeview_city_list();
   window_world_drug_prices.treeview_city->setFixedHeight(210);
   vbox_city->addWidget(window_world_drug_prices.treeview_city);
   hbox_top->addWidget(frame_city);
@@ -839,15 +894,27 @@ void create_window_world_cities() {
   QGroupBox *frame_city = new QGroupBox("City", window_world_cities.window);
   QVBoxLayout *vbox_city = new QVBoxLayout(frame_city);
   vbox_city->setContentsMargins(5, 5, 5, 5);
-  window_world_cities.treeview_city = create_treeview_drug(false);
+  window_world_cities.treeview_city = create_treeview_city_names();
   window_world_cities.treeview_city->setFixedHeight(210);
+  window_world_cities.treeview_city->clear();
+  for (int i = 0; i < CITY_NUM; ++i) {
+    QTreeWidgetItem* item =
+        new QTreeWidgetItem(window_world_cities.treeview_city);
+    item->setData(0, Qt::UserRole, i);
+    std::string text = std::format("{}, {}", city_name(city_info[i].id),
+                                   country_name(city_info[i].country));
+    if (i == window_main.game_state->location) {
+      text += " (Current)";
+    }
+    item->setText(0, QString::fromStdString(text));
+  }
   vbox_city->addWidget(window_world_cities.treeview_city);
   hbox_top->addWidget(frame_city);
 
   QGroupBox *frame_drug = new QGroupBox("Drug List", window_world_cities.window);
   QVBoxLayout *vbox_drug = new QVBoxLayout(frame_drug);
   vbox_drug->setContentsMargins(5, 5, 5, 5);
-  window_world_cities.treeview_drug = create_treeview_drug(true);
+  window_world_cities.treeview_drug = create_treeview_drug_list();
   window_world_cities.treeview_drug->setFixedHeight(210);
   vbox_drug->addWidget(window_world_cities.treeview_drug);
   hbox_top->addWidget(frame_drug);
