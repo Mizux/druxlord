@@ -214,7 +214,7 @@ static QTreeWidget* create_treeview_city_names() {
   treeview->setUniformRowHeights(true);
   treeview->header()->setStretchLastSection(false);
   treeview->setColumnCount(1);
-  treeview->setHeaderLabels({"Name"});
+  treeview->setHeaderLabels({"City Name"});
   treeview->setColumnWidth(0, COLUMN_NAME_WIDTH);
   return treeview;
 }

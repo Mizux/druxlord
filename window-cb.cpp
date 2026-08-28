@@ -439,6 +439,7 @@ void window_main_button_stayhere_clicked_cb() {
   update_all_ui(*window_main.game_state);
   if (window_main.game_state->day >= DAY_NUM - 1) {
     int score = window_main.game_state->cash + window_main.game_state->bank - window_main.game_state->debt;
+    if (score < 0) score = 0;
     std::string msg = std::format("That's it, the game is over! You have a final score of ${}", money_string(score));
     QMessageBox::information(window_main.window, "Game Over", QString::fromStdString(msg));
   }
