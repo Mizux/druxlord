@@ -1,3 +1,18 @@
+Github-CI:<br>
+[![Build Status][amd64_linux_status]][amd64_linux_link]
+[![Build Status][amd64_macos_status]][amd64_macos_link]
+[![Build Status][arm64_macos_status]][arm64_macos_link]
+[![Build Status][amd64_windows_status]][amd64_windows_link]<br>
+
+[amd64_linux_status]: ./../../actions/workflows/amd64_linux_cmake.yml/badge.svg
+[amd64_linux_link]: ./../../actions/workflows/amd64_linux_cmake.yml
+[amd64_macos_status]: ./../../actions/workflows/amd64_macos_cmake.yml/badge.svg
+[amd64_macos_link]: ./../../actions/workflows/amd64_macos_cmake.yml
+[arm64_macos_status]: ./../../actions/workflows/arm64_macos_cmake.yml/badge.svg
+[arm64_macos_link]: ./../../actions/workflows/arm64_macos_cmake.yml
+[amd64_windows_status]: ./../../actions/workflows/amd64_windows_cmake.yml/badge.svg
+[amd64_windows_link]: ./../../actions/workflows/amd64_windows_cmake.yml
+
 # Drux Lord
 
 A Linux clone of the classic game [Drug Lord 2](http://www.geekhideout.com/druglord2.shtml) built with modern C++20 and Qt 6 (or Qt 5).
@@ -23,23 +38,27 @@ sudo apt install build-essential cmake qt6-base-dev
 ## Building and Running
 
 ### 1. Configure
+
 ```bash
-cmake -B build -S .
+cmake -S . -B build
 ```
 
 ### 2. Compile
+
 ```bash
-cmake --build build
+cmake --build build --config Release
 ```
 
 The compiled binary will be located in `build/bin/druxlord`.
 
 ### 3. Run
+
 ```bash
 ./build/bin/druxlord
 ```
 
 ### 4. Install (Optional)
+
 ```bash
 cmake --install build --prefix /usr/local
 ```
