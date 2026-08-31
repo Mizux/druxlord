@@ -789,6 +789,12 @@ void WindowShopping::updateShopping() {
         item->setText(
             COLUMN_STORE_PRICE,
             QString::fromStdString(money_string(shop_items[i].weapon_price)));
+        item->setTextAlignment(COLUMN_STORE_NAME,
+                               Qt::AlignLeft | Qt::AlignVCenter);
+        item->setTextAlignment(COLUMN_STORE_TYPE,
+                               Qt::AlignCenter | Qt::AlignVCenter);
+        item->setTextAlignment(COLUMN_STORE_PRICE,
+                               Qt::AlignRight | Qt::AlignVCenter);
         item->setData(0, Qt::UserRole, i);
         item->setData(0, Qt::UserRole + 1, false);
       }
@@ -800,6 +806,12 @@ void WindowShopping::updateShopping() {
         item->setText(
             COLUMN_STORE_PRICE,
             QString::fromStdString(money_string(shop_items[i].ammo_price)));
+        item->setTextAlignment(COLUMN_STORE_NAME,
+                               Qt::AlignLeft | Qt::AlignVCenter);
+        item->setTextAlignment(COLUMN_STORE_TYPE,
+                               Qt::AlignCenter | Qt::AlignVCenter);
+        item->setTextAlignment(COLUMN_STORE_PRICE,
+                               Qt::AlignRight | Qt::AlignVCenter);
         item->setData(0, Qt::UserRole, i);
         item->setData(0, Qt::UserRole + 1, true);
       }
@@ -822,6 +834,14 @@ void WindowShopping::updateShopping() {
         item->setText(
             COLUMN_INVENTORY_SELLFOR,
             QString::fromStdString(money_string(shop_items[i].weapon_price)));
+        item->setTextAlignment(COLUMN_INVENTORY_NAME,
+                               Qt::AlignLeft | Qt::AlignVCenter);
+        item->setTextAlignment(COLUMN_INVENTORY_TYPE,
+                               Qt::AlignCenter | Qt::AlignVCenter);
+        item->setTextAlignment(COLUMN_INVENTORY_QTY,
+                               Qt::AlignRight | Qt::AlignVCenter);
+        item->setTextAlignment(COLUMN_INVENTORY_SELLFOR,
+                               Qt::AlignRight | Qt::AlignVCenter);
         item->setData(0, Qt::UserRole, i);
         item->setData(0, Qt::UserRole + 1, false);
       }
@@ -835,6 +855,14 @@ void WindowShopping::updateShopping() {
         item->setText(
             COLUMN_INVENTORY_SELLFOR,
             QString::fromStdString(money_string(shop_items[i].ammo_price)));
+        item->setTextAlignment(COLUMN_INVENTORY_NAME,
+                               Qt::AlignLeft | Qt::AlignVCenter);
+        item->setTextAlignment(COLUMN_INVENTORY_TYPE,
+                               Qt::AlignCenter | Qt::AlignVCenter);
+        item->setTextAlignment(COLUMN_INVENTORY_QTY,
+                               Qt::AlignRight | Qt::AlignVCenter);
+        item->setTextAlignment(COLUMN_INVENTORY_SELLFOR,
+                               Qt::AlignRight | Qt::AlignVCenter);
         item->setData(0, Qt::UserRole, i);
         item->setData(0, Qt::UserRole + 1, true);
       }
@@ -971,6 +999,7 @@ void WindowShopping::onSellClicked() {
 void WindowShopping::_setupWidget() {
   setWindowTitle("Shopping");
   setModal(true);
+  setMinimumWidth(560);
 
   QVBoxLayout* vbox_main = new QVBoxLayout(this);
   vbox_main->setContentsMargins(5, 5, 5, 5);
@@ -985,16 +1014,23 @@ void WindowShopping::_setupWidget() {
   _treeview_store->setRootIsDecorated(false);
   _treeview_store->setColumnCount(3);
   _treeview_store->setHeaderLabels({"Name", "Type", "Price"});
-  _treeview_store->setColumnWidth(COLUMN_STORE_NAME, 160);
-  _treeview_store->setColumnWidth(COLUMN_STORE_TYPE, 80);
-  _treeview_store->setColumnWidth(COLUMN_STORE_PRICE, 70);
+  _treeview_store->setMinimumWidth(540);
+  _treeview_store->setFixedHeight(220);
+  _treeview_store->header()->setStretchLastSection(false);
+  _treeview_store->header()->setSectionResizeMode(COLUMN_STORE_NAME,
+                                                  QHeaderView::Stretch);
+  _treeview_store->header()->setSectionResizeMode(COLUMN_STORE_TYPE,
+                                                  QHeaderView::Interactive);
+  _treeview_store->header()->resizeSection(COLUMN_STORE_TYPE, 100);
+  _treeview_store->header()->setSectionResizeMode(COLUMN_STORE_PRICE,
+                                                  QHeaderView::Interactive);
+  _treeview_store->header()->resizeSection(COLUMN_STORE_PRICE, 100);
   _treeview_store->headerItem()->setTextAlignment(
       COLUMN_STORE_NAME, Qt::AlignLeft | Qt::AlignVCenter);
   _treeview_store->headerItem()->setTextAlignment(
       COLUMN_STORE_TYPE, Qt::AlignCenter | Qt::AlignVCenter);
   _treeview_store->headerItem()->setTextAlignment(
       COLUMN_STORE_PRICE, Qt::AlignRight | Qt::AlignVCenter);
-  _treeview_store->setFixedHeight(220);
   vbox_store->addWidget(_treeview_store);
 
   QHBoxLayout* hbox_buy = new QHBoxLayout();
@@ -1015,10 +1051,20 @@ void WindowShopping::_setupWidget() {
   _treeview_inventory->setRootIsDecorated(false);
   _treeview_inventory->setColumnCount(4);
   _treeview_inventory->setHeaderLabels({"Name", "Type", "Qty", "Price"});
-  _treeview_inventory->setColumnWidth(COLUMN_INVENTORY_NAME, 160);
-  _treeview_inventory->setColumnWidth(COLUMN_INVENTORY_TYPE, 80);
-  _treeview_inventory->setColumnWidth(COLUMN_INVENTORY_QTY, 50);
-  _treeview_inventory->setColumnWidth(COLUMN_INVENTORY_SELLFOR, 70);
+  _treeview_inventory->setMinimumWidth(540);
+  _treeview_inventory->setFixedHeight(160);
+  _treeview_inventory->header()->setStretchLastSection(false);
+  _treeview_inventory->header()->setSectionResizeMode(COLUMN_INVENTORY_NAME,
+                                                      QHeaderView::Stretch);
+  _treeview_inventory->header()->setSectionResizeMode(COLUMN_INVENTORY_TYPE,
+                                                      QHeaderView::Interactive);
+  _treeview_inventory->header()->resizeSection(COLUMN_INVENTORY_TYPE, 100);
+  _treeview_inventory->header()->setSectionResizeMode(COLUMN_INVENTORY_QTY,
+                                                      QHeaderView::Interactive);
+  _treeview_inventory->header()->resizeSection(COLUMN_INVENTORY_QTY, 70);
+  _treeview_inventory->header()->setSectionResizeMode(COLUMN_INVENTORY_SELLFOR,
+                                                      QHeaderView::Interactive);
+  _treeview_inventory->header()->resizeSection(COLUMN_INVENTORY_SELLFOR, 100);
   _treeview_inventory->headerItem()->setTextAlignment(
       COLUMN_INVENTORY_NAME, Qt::AlignLeft | Qt::AlignVCenter);
   _treeview_inventory->headerItem()->setTextAlignment(
@@ -1027,7 +1073,6 @@ void WindowShopping::_setupWidget() {
       COLUMN_INVENTORY_QTY, Qt::AlignRight | Qt::AlignVCenter);
   _treeview_inventory->headerItem()->setTextAlignment(
       COLUMN_INVENTORY_SELLFOR, Qt::AlignRight | Qt::AlignVCenter);
-  _treeview_inventory->setFixedHeight(150);
   vbox_inv->addWidget(_treeview_inventory);
 
   QHBoxLayout* hbox_sell_cash = new QHBoxLayout();
@@ -1067,7 +1112,8 @@ void WindowShopping::_setupWidget() {
           &WindowShopping::onSellClicked);
 
   updateShopping();
-  layout()->setSizeConstraint(QLayout::SetFixedSize);
+  layout()->setSizeConstraint(QLayout::SetMinimumSize);
+  resize(560, 560);
 }
 
 // WindowHospital Implementation
