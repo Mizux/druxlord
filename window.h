@@ -2,6 +2,7 @@
 
 #include <QCheckBox>
 #include <QDialog>
+#include <QGroupBox>
 #include <QKeySequence>
 #include <QLabel>
 #include <QMenu>
@@ -11,108 +12,12 @@
 #include <QShortcut>
 #include <QSlider>
 #include <QSpinBox>
+#include <QString>
 #include <QTextEdit>
 #include <QTreeWidget>
 #include <QWidget>
 
-class GameState;
-
-struct WindowMain {
-  GameState* game_state = nullptr;
-  QWidget* window = nullptr;
-  QTextEdit* textview_information = nullptr;
-  QTreeWidget* treeview_market = nullptr;
-  QTreeWidget* treeview_pocket = nullptr;
-  QPushButton* button_buy = nullptr;
-  QPushButton* button_sell = nullptr;
-  QPushButton* button_dump = nullptr;
-  QPushButton* button_places = nullptr;
-  QPushButton* button_info = nullptr;
-  QPushButton* button_stayhere = nullptr;
-  QPushButton* button_flyaway = nullptr;
-  QPushButton* button_about = nullptr;
-  QPushButton* button_docs = nullptr;
-  QPushButton* button_highscores = nullptr;
-  QPushButton* button_newgamequit = nullptr;
-  QCheckBox* checkbutton_sound = nullptr;
-  QLabel* label_pocket = nullptr;
-  QLabel* label_location = nullptr;
-  QLabel* label_day = nullptr;
-  QLabel* label_rank = nullptr;
-  QLabel* label_cash = nullptr;
-  QLabel* label_bank = nullptr;
-  QLabel* label_debt = nullptr;
-  QProgressBar* progressbar_health = nullptr;
-  QWidget* drawingarea_status = nullptr;
-  QShortcut* shortcut_quit = nullptr;
-};
-
-struct WindowFinance {
-  QDialog* window = nullptr;
-  QRadioButton* radiobutton_depositsome = nullptr;
-  QRadioButton* radiobutton_depositall = nullptr;
-  QRadioButton* radiobutton_depositallbut = nullptr;
-  QRadioButton* radiobutton_withdrawsome = nullptr;
-  QRadioButton* radiobutton_withdrawall = nullptr;
-  QRadioButton* radiobutton_withdrawallbut = nullptr;
-  QSpinBox* spinbutton_amount = nullptr;
-  QPushButton* button_doit = nullptr;
-  QTreeWidget* treeview_loan = nullptr;
-  QLabel* label_cash = nullptr;
-  QLabel* label_bank = nullptr;
-  QLabel* label_debt = nullptr;
-  QPushButton* button_borrow = nullptr;
-  QPushButton* button_repay = nullptr;
-  QPushButton* button_done = nullptr;
-};
-
-struct WindowShopping {
-  QDialog* window = nullptr;
-  QTreeWidget* treeview_store = nullptr;
-  QTreeWidget* treeview_inventory = nullptr;
-  QPushButton* button_buy = nullptr;
-  QPushButton* button_sell = nullptr;
-  QPushButton* button_done = nullptr;
-  QLabel* label_cash = nullptr;
-};
-
-struct WindowHospital {
-  QDialog* window = nullptr;
-  QProgressBar* progressbar_health = nullptr;
-  QSlider* scalebutton_health = nullptr;
-  QLabel* label_cash = nullptr;
-  QLabel* label_cost = nullptr;
-  QPushButton* button_ok = nullptr;
-};
-
-struct WindowVault {
-  QDialog* window = nullptr;
-  QTreeWidget* treeview_pocket = nullptr;
-  QTreeWidget* treeview_vault = nullptr;
-  QPushButton* button_intovault = nullptr;
-  QPushButton* button_fromvault = nullptr;
-  QPushButton* button_ok = nullptr;
-};
-
-struct WindowWorldDrugPrices {
-  QDialog* window = nullptr;
-  QTreeWidget* treeview_drug = nullptr;
-  QTreeWidget* treeview_city = nullptr;
-  QPushButton* button_close = nullptr;
-};
-
-struct WindowWorldCities {
-  QDialog* window = nullptr;
-  QTreeWidget* treeview_city = nullptr;
-  QTreeWidget* treeview_drug = nullptr;
-  QPushButton* button_close = nullptr;
-};
-
-struct WindowInput {
-  QDialog* window = nullptr;
-  QSpinBox* spinbutton_value = nullptr;
-  QPushButton* button_ok = nullptr;
-};
+#include "druxlord.h"
 
 enum { COLUMN_STATUS, COLUMN_NAME, COLUMN_QTY, COLUMN_PRICE };
 
@@ -134,47 +39,349 @@ enum {
   COLUMN_INVENTORY_SELLFOR
 };
 
-// Main Window
-extern WindowMain window_main;
-void create_window_main(GameState& game_state);
+class MainWindow : public QWidget {
+  Q_OBJECT
 
-// Places Windows
-extern WindowFinance window_finance;
-void create_window_finance();
-extern WindowShopping window_shopping;
-void create_window_shopping();
-extern WindowHospital window_hospital;
-void create_window_hospital();
-extern WindowVault window_vault;
-void create_window_vault();
+ public:
+  explicit MainWindow(QWidget* parent = nullptr);
+  explicit MainWindow(GameState game_state, QWidget* parent = nullptr);
+  virtual ~MainWindow() = default;
 
-// Info Widgets
-extern WindowWorldDrugPrices window_world_drug_prices;
-void create_window_world_drug_prices();
-extern WindowWorldCities window_world_cities;
-void create_window_world_cities();
+  MainWindow(const MainWindow&) = delete;
+  MainWindow& operator=(const MainWindow&) = delete;
 
-// Dialogs
-extern WindowInput window_input;
-void create_window_input(const char* title, const char* message,
-                         const char* question);
+  GameState& gameState() { return _gameState; }
+  const GameState& gameState() const { return _gameState; }
 
-void update_all_ui(const GameState& game_state);
+  void updateAllUi();
 
-void fill_treeview_market(QTreeWidget* treeview, const GameState& game_state);
-void fill_treeview_pocket(QTreeWidget* treeview, const GameState& game_state);
-void fill_treeview_city_list(QTreeWidget* treeview, GameState* game_state,
-                             int drug_idx);
-void fill_treeview_drug_list(QTreeWidget* treeview, GameState* game_state,
-                             int city_idx);
+  QTreeWidget* treeviewMarket() const { return _treeview_market; }
+  QTreeWidget* treeviewPocket() const { return _treeview_pocket; }
+  QTextEdit* textviewInformation() const { return _textview_information; }
 
-void set_label_frame_pocket(int npocket, int capacity = 10);
-void set_label_location(int location);
-void set_label_health(int health);
-void set_label_day(int day);
-void set_label_rank(int rank);
-void set_label_cash(int value);
-void set_label_bank(int value);
-void set_label_debt(int value);
-QMenu* create_places_menu(QPushButton* button);
-QMenu* create_info_menu(QPushButton* button);
+  // Controlling other views
+  void showFinance();
+  void showShopping();
+  void showHospital();
+  void showVault();
+  void showWorldDrugPrices();
+  void showWorldCities();
+  void showShipping();
+  void showVaultsInfo();
+  void showShipmentStatus();
+  void showHistory();
+  void showFlyAway();
+  void showAbout();
+  void showDocs();
+  void showHighscores();
+  void buyDrug();
+  void sellDrug();
+  void dumpDrug();
+  void stayHere();
+  void newGame();
+
+ signals:
+  void stateUpdated();
+
+ public slots:
+  void slotBuy();
+  void slotSell();
+  void slotDump();
+  void slotPlacesFinances();
+  void slotPlacesShopping();
+  void slotPlacesHospital();
+  void slotPlacesVault();
+  void slotPlacesShipping();
+  void slotInfoVaults();
+  void slotInfoWorldDrugPrices();
+  void slotInfoWorldCities();
+  void slotInfoShipmentStatus();
+  void slotInfoHistory();
+  void slotStayHere();
+  void slotFlyAway();
+  void slotAbout();
+  void slotDocs();
+  void slotHighscores();
+  void slotNewGameQuit();
+
+ private:
+  void _setupWidget();
+  QMenu* _createPlacesMenu(QPushButton* button);
+  QMenu* _createInfoMenu(QPushButton* button);
+
+  void _fillTreeviewMarket();
+  void _fillTreeviewPocket();
+
+  void _setLabelPocket(int npocket, int capacity = 10);
+  void _setLabelLocation(int location);
+  void _setLabelHealth(int health);
+  void _setLabelDay(int day);
+  void _setLabelRank(int rank);
+  void _setLabelCash(int value);
+  void _setLabelBank(int value);
+  void _setLabelDebt(int value);
+
+  GameState _gameState;
+
+  QTextEdit* _textview_information = nullptr;
+  QTreeWidget* _treeview_market = nullptr;
+  QTreeWidget* _treeview_pocket = nullptr;
+  QPushButton* _button_buy = nullptr;
+  QPushButton* _button_sell = nullptr;
+  QPushButton* _button_dump = nullptr;
+  QPushButton* _button_places = nullptr;
+  QPushButton* _button_info = nullptr;
+  QPushButton* _button_stayhere = nullptr;
+  QPushButton* _button_flyaway = nullptr;
+  QPushButton* _button_about = nullptr;
+  QPushButton* _button_docs = nullptr;
+  QPushButton* _button_highscores = nullptr;
+  QPushButton* _button_newgamequit = nullptr;
+  QCheckBox* _checkbutton_sound = nullptr;
+  QLabel* _label_pocket = nullptr;
+  QGroupBox* _group_pocket = nullptr;
+  QLabel* _label_location = nullptr;
+  QLabel* _label_day = nullptr;
+  QLabel* _label_rank = nullptr;
+  QLabel* _label_cash = nullptr;
+  QLabel* _label_bank = nullptr;
+  QLabel* _label_debt = nullptr;
+  QProgressBar* _progressbar_health = nullptr;
+  QWidget* _drawingarea_status = nullptr;
+  QShortcut* _shortcut_quit = nullptr;
+};
+
+using WindowMain = MainWindow;
+using MainWindows = MainWindow;
+
+class WindowFinance : public QDialog {
+  Q_OBJECT
+
+ public:
+  explicit WindowFinance(GameState& gameState, QWidget* parent = nullptr);
+  virtual ~WindowFinance() = default;
+
+  WindowFinance(const WindowFinance&) = delete;
+  WindowFinance& operator=(const WindowFinance&) = delete;
+
+  void updateFinanceLabels();
+
+ signals:
+  void stateChanged();
+
+ public slots:
+  void onDoItClicked();
+  void onBorrowClicked();
+  void onRepayClicked();
+
+ private:
+  void _setupWidget();
+
+  GameState& _gameState;
+
+  QRadioButton* _radiobutton_depositsome = nullptr;
+  QRadioButton* _radiobutton_depositall = nullptr;
+  QRadioButton* _radiobutton_depositallbut = nullptr;
+  QRadioButton* _radiobutton_withdrawsome = nullptr;
+  QRadioButton* _radiobutton_withdrawall = nullptr;
+  QRadioButton* _radiobutton_withdrawallbut = nullptr;
+  QSpinBox* _spinbutton_amount = nullptr;
+  QPushButton* _button_doit = nullptr;
+  QTreeWidget* _treeview_loan = nullptr;
+  QLabel* _label_cash = nullptr;
+  QLabel* _label_bank = nullptr;
+  QLabel* _label_debt = nullptr;
+  QPushButton* _button_borrow = nullptr;
+  QPushButton* _button_repay = nullptr;
+  QPushButton* _button_done = nullptr;
+};
+
+using FinanceDialog = WindowFinance;
+
+class WindowShopping : public QDialog {
+  Q_OBJECT
+
+ public:
+  explicit WindowShopping(GameState& gameState, QWidget* parent = nullptr);
+  virtual ~WindowShopping() = default;
+
+  WindowShopping(const WindowShopping&) = delete;
+  WindowShopping& operator=(const WindowShopping&) = delete;
+
+  void updateShopping();
+
+ signals:
+  void stateChanged();
+
+ private:
+  void _setupWidget();
+
+  GameState& _gameState;
+
+  QTreeWidget* _treeview_store = nullptr;
+  QTreeWidget* _treeview_inventory = nullptr;
+  QPushButton* _button_buy = nullptr;
+  QPushButton* _button_sell = nullptr;
+  QPushButton* _button_done = nullptr;
+  QLabel* _label_cash = nullptr;
+};
+
+using ShoppingDialog = WindowShopping;
+
+class WindowHospital : public QDialog {
+  Q_OBJECT
+
+ public:
+  explicit WindowHospital(GameState& gameState, QWidget* parent = nullptr);
+  virtual ~WindowHospital() = default;
+
+  WindowHospital(const WindowHospital&) = delete;
+  WindowHospital& operator=(const WindowHospital&) = delete;
+
+ signals:
+  void stateChanged();
+
+ public slots:
+  void onSliderValueChanged(int val);
+  void onOkClicked();
+
+ private:
+  void _setupWidget();
+
+  GameState& _gameState;
+
+  QProgressBar* _progressbar_health = nullptr;
+  QSlider* _scalebutton_health = nullptr;
+  QLabel* _label_cash = nullptr;
+  QLabel* _label_cost = nullptr;
+  QPushButton* _button_ok = nullptr;
+  QPushButton* _button_cancel = nullptr;
+};
+
+using HospitalDialog = WindowHospital;
+
+class WindowVault : public QDialog {
+  Q_OBJECT
+
+ public:
+  explicit WindowVault(GameState& gameState, QWidget* parent = nullptr);
+  virtual ~WindowVault() = default;
+
+  WindowVault(const WindowVault&) = delete;
+  WindowVault& operator=(const WindowVault&) = delete;
+
+  void updateVaultLists();
+
+ signals:
+  void stateChanged();
+
+ public slots:
+  void onIntoVaultClicked();
+  void onFromVaultClicked();
+
+ private:
+  void _setupWidget();
+
+  GameState& _gameState;
+
+  QGroupBox* _frame_pocket = nullptr;
+  QTreeWidget* _treeview_pocket = nullptr;
+  QTreeWidget* _treeview_vault = nullptr;
+  QPushButton* _button_intovault = nullptr;
+  QPushButton* _button_fromvault = nullptr;
+  QPushButton* _button_ok = nullptr;
+  QPushButton* _button_cancel = nullptr;
+};
+
+using VaultDialog = WindowVault;
+
+class WindowWorldDrugPrices : public QDialog {
+  Q_OBJECT
+
+ public:
+  explicit WindowWorldDrugPrices(const GameState& gameState,
+                                 QWidget* parent = nullptr);
+  virtual ~WindowWorldDrugPrices() = default;
+
+  WindowWorldDrugPrices(const WindowWorldDrugPrices&) = delete;
+  WindowWorldDrugPrices& operator=(const WindowWorldDrugPrices&) = delete;
+
+  void fillCityList(int drug_idx);
+
+ public slots:
+  void onDrugItemClicked(QTreeWidgetItem* item, int column);
+
+ private:
+  void _setupWidget();
+
+  const GameState& _gameState;
+
+  QTreeWidget* _treeview_drug = nullptr;
+  QTreeWidget* _treeview_city = nullptr;
+  QPushButton* _button_close = nullptr;
+};
+
+using WorldDrugPricesDialog = WindowWorldDrugPrices;
+
+class WindowWorldCities : public QDialog {
+  Q_OBJECT
+
+ public:
+  explicit WindowWorldCities(const GameState& gameState,
+                             QWidget* parent = nullptr);
+  virtual ~WindowWorldCities() = default;
+
+  WindowWorldCities(const WindowWorldCities&) = delete;
+  WindowWorldCities& operator=(const WindowWorldCities&) = delete;
+
+  void fillDrugList(int city_idx);
+
+ public slots:
+  void onCityItemClicked(QTreeWidgetItem* item, int column);
+
+ private:
+  void _setupWidget();
+
+  const GameState& _gameState;
+
+  QTreeWidget* _treeview_city = nullptr;
+  QTreeWidget* _treeview_drug = nullptr;
+  QPushButton* _button_close = nullptr;
+};
+
+using WorldCitiesDialog = WindowWorldCities;
+
+class WindowInput : public QDialog {
+  Q_OBJECT
+
+ public:
+  explicit WindowInput(QWidget* parent = nullptr);
+  WindowInput(const QString& title, const QString& message,
+              const QString& question, QWidget* parent = nullptr);
+  virtual ~WindowInput() = default;
+
+  WindowInput(const WindowInput&) = delete;
+  WindowInput& operator=(const WindowInput&) = delete;
+
+  void setMessage(const QString& message);
+  void setQuestion(const QString& question);
+  void setRange(int min, int max);
+  void setValue(int val);
+  int value() const;
+
+  QSpinBox* spinbox() const { return _spinbutton_value; }
+  QPushButton* buttonOk() const { return _button_ok; }
+  QPushButton* buttonCancel() const { return _button_cancel; }
+
+ private:
+  void _setupWidget(const QString& title, const QString& message,
+                    const QString& question);
+
+  QLabel* _label_msg = nullptr;
+  QLabel* _label_question = nullptr;
+  QSpinBox* _spinbutton_value = nullptr;
+  QPushButton* _button_ok = nullptr;
+  QPushButton* _button_cancel = nullptr;
+};
+
+using InputDialog = WindowInput;

@@ -32,130 +32,7 @@ inline constexpr int COLUMN_NAME_WIDTH = 120;
 inline constexpr int COLUMN_QTY_WIDTH = 50;
 inline constexpr int COLUMN_PRICE_WIDTH = 70;
 
-WindowMain window_main{};
-
-WindowFinance window_finance{};
-WindowShopping window_shopping{};
-WindowHospital window_hospital{};
-WindowVault window_vault{};
-
-WindowWorldDrugPrices window_world_drug_prices{};
-WindowWorldCities window_world_cities{};
-
-WindowInput window_input{};
-
-static QGroupBox* group_pocket = nullptr;
-
-void update_all_ui(const GameState& game_state) {
-  set_label_location(game_state.location);
-  set_label_health(game_state.health);
-  set_label_day(game_state.day + 1);
-  set_label_rank(game_state.rank);
-  set_label_cash(game_state.cash);
-  set_label_bank(game_state.bank);
-  set_label_debt(game_state.debt);
-  set_label_frame_pocket(game_state.pocket, game_state.pocket_capacity);
-  if (window_main.treeview_market) {
-    fill_treeview_market(window_main.treeview_market, game_state);
-  }
-  if (window_main.treeview_pocket) {
-    fill_treeview_pocket(window_main.treeview_pocket, game_state);
-  }
-  if (window_main.textview_information) {
-    std::string news =
-        game_state.get_market_news(game_state.location, game_state.day);
-    window_main.textview_information->setText(QString::fromStdString(news));
-  }
-}
-
-void fill_treeview_market(QTreeWidget* treeview, const GameState& game_state) {
-  if (!treeview) return;
-  treeview->clear();
-  int loc = game_state.location;
-  int day = game_state.day;
-
-  for (int drug_idx = 0; drug_idx < DRUG_NUM; ++drug_idx) {
-    if (game_state.drug_table[drug_idx][loc][day].available) {
-      std::string price_str =
-          money_string(game_state.drug_table[drug_idx][loc][day].price);
-      QTreeWidgetItem* item = new QTreeWidgetItem(treeview);
-      std::string name_str = drug_name(drug_info[drug_idx].id);
-      if (game_state.drug_table[drug_idx][loc][day].event_flag > 0) {
-        item->setText(COLUMN_STATUS, QString::fromUtf8("\u25B2"));
-      } else if (game_state.drug_table[drug_idx][loc][day].event_flag < 0) {
-        item->setText(COLUMN_STATUS, QString::fromUtf8("\u25BC"));
-      }
-      item->setText(COLUMN_NAME, QString::fromStdString(name_str));
-      item->setText(
-          COLUMN_QTY,
-          QString::number(game_state.drug_table[drug_idx][loc][day].qty));
-      item->setText(COLUMN_PRICE, QString::fromStdString(price_str));
-      item->setData(COLUMN_NAME, Qt::UserRole, drug_idx);
-      item->setTextAlignment(COLUMN_QTY, Qt::AlignRight | Qt::AlignVCenter);
-      item->setTextAlignment(COLUMN_PRICE, Qt::AlignRight | Qt::AlignVCenter);
-    }
-  }
-}
-
-void fill_treeview_pocket(QTreeWidget* treeview, const GameState& game_state) {
-  if (!treeview) return;
-  treeview->clear();
-
-  for (int drug_idx = 0; drug_idx < DRUG_NUM; ++drug_idx) {
-    if (game_state.player_qty[drug_idx] > 0) {
-      QTreeWidgetItem* item = new QTreeWidgetItem(treeview);
-      std::string name_str = drug_name(drug_info[drug_idx].id);
-      item->setText(0, QString::fromStdString(name_str));
-      item->setText(1, QString::number(game_state.player_qty[drug_idx]));
-      item->setText(2, QString::fromStdString(
-                           money_string(game_state.player_price[drug_idx])));
-      item->setData(0, Qt::UserRole, drug_idx);
-      item->setTextAlignment(1, Qt::AlignRight | Qt::AlignVCenter);
-      item->setTextAlignment(2, Qt::AlignRight | Qt::AlignVCenter);
-    }
-  }
-}
-
-void fill_treeview_city_list(QTreeWidget* treeview, GameState* game_state,
-                             int drug_idx) {
-  if (!treeview || !game_state) return;
-  treeview->clear();
-  int day = game_state->day;
-  for (int city_idx = 0; city_idx < CITY_NUM; ++city_idx) {
-    QTreeWidgetItem* item = new QTreeWidgetItem(treeview);
-    std::string text = std::format("{}, {}", city_name(city_info[city_idx].id),
-                                   country_name(city_info[city_idx].country));
-    item->setText(0, QString::fromStdString(text));
-    item->setText(1, QString::number(
-                         game_state->drug_table[drug_idx][city_idx][day].qty));
-    item->setText(2,
-                  QString::fromStdString(money_string(
-                      game_state->drug_table[drug_idx][city_idx][day].price)));
-    item->setTextAlignment(1, Qt::AlignRight | Qt::AlignVCenter);
-    item->setTextAlignment(2, Qt::AlignRight | Qt::AlignVCenter);
-  }
-}
-
-void fill_treeview_drug_list(QTreeWidget* treeview, GameState* game_state,
-                             int city_idx) {
-  if (!treeview || !game_state) return;
-  treeview->clear();
-  int day = game_state->day;
-  for (int drug_idx = 0; drug_idx < DRUG_NUM; ++drug_idx) {
-    QTreeWidgetItem* item = new QTreeWidgetItem(treeview);
-    std::string name_str = drug_name(drug_info[drug_idx].id);
-    item->setText(0, QString::fromStdString(name_str));
-    item->setText(1, QString::number(
-                         game_state->drug_table[drug_idx][city_idx][day].qty));
-    item->setText(2,
-                  QString::fromStdString(money_string(
-                      game_state->drug_table[drug_idx][city_idx][day].price)));
-    item->setData(0, Qt::UserRole, drug_idx);
-    item->setTextAlignment(1, Qt::AlignRight | Qt::AlignVCenter);
-    item->setTextAlignment(2, Qt::AlignRight | Qt::AlignVCenter);
-  }
-}
-
+// Static treeview helper functions
 static QTreeWidget* create_treeview_drug(bool with_status) {
   QTreeWidget* treeview = new QTreeWidget();
   treeview->setRootIsDecorated(false);
@@ -236,23 +113,102 @@ static QTreeWidget* create_treeview_drug_list() {
   return treeview;
 }
 
-void set_label_frame_pocket(int npocket, int capacity) {
+// MainWindow Implementation
+
+MainWindow::MainWindow(QWidget* parent) : QWidget(parent), _gameState() {
+  _setupWidget();
+  updateAllUi();
+}
+
+MainWindow::MainWindow(GameState game_state, QWidget* parent)
+    : QWidget(parent), _gameState(std::move(game_state)) {
+  _setupWidget();
+  updateAllUi();
+}
+
+void MainWindow::updateAllUi() {
+  _setLabelLocation(_gameState.location);
+  _setLabelHealth(_gameState.health);
+  _setLabelDay(_gameState.day + 1);
+  _setLabelRank(_gameState.rank);
+  _setLabelCash(_gameState.cash);
+  _setLabelBank(_gameState.bank);
+  _setLabelDebt(_gameState.debt);
+  _setLabelPocket(_gameState.pocket, _gameState.pocket_capacity);
+  _fillTreeviewMarket();
+  _fillTreeviewPocket();
+  if (_textview_information) {
+    std::string news =
+        _gameState.get_market_news(_gameState.location, _gameState.day);
+    _textview_information->setText(QString::fromStdString(news));
+  }
+}
+
+void MainWindow::_fillTreeviewMarket() {
+  if (!_treeview_market) return;
+  _treeview_market->clear();
+  int loc = _gameState.location;
+  int day = _gameState.day;
+
+  for (int drug_idx = 0; drug_idx < DRUG_NUM; ++drug_idx) {
+    if (_gameState.drug_table[drug_idx][loc][day].available) {
+      std::string price_str =
+          money_string(_gameState.drug_table[drug_idx][loc][day].price);
+      QTreeWidgetItem* item = new QTreeWidgetItem(_treeview_market);
+      std::string name_str = drug_name(drug_info[drug_idx].id);
+      if (_gameState.drug_table[drug_idx][loc][day].event_flag > 0) {
+        item->setText(COLUMN_STATUS, QString::fromUtf8("\u25B2"));
+      } else if (_gameState.drug_table[drug_idx][loc][day].event_flag < 0) {
+        item->setText(COLUMN_STATUS, QString::fromUtf8("\u25BC"));
+      }
+      item->setText(COLUMN_NAME, QString::fromStdString(name_str));
+      item->setText(
+          COLUMN_QTY,
+          QString::number(_gameState.drug_table[drug_idx][loc][day].qty));
+      item->setText(COLUMN_PRICE, QString::fromStdString(price_str));
+      item->setData(COLUMN_NAME, Qt::UserRole, drug_idx);
+      item->setTextAlignment(COLUMN_QTY, Qt::AlignRight | Qt::AlignVCenter);
+      item->setTextAlignment(COLUMN_PRICE, Qt::AlignRight | Qt::AlignVCenter);
+    }
+  }
+}
+
+void MainWindow::_fillTreeviewPocket() {
+  if (!_treeview_pocket) return;
+  _treeview_pocket->clear();
+
+  for (int drug_idx = 0; drug_idx < DRUG_NUM; ++drug_idx) {
+    if (_gameState.player_qty[drug_idx] > 0) {
+      QTreeWidgetItem* item = new QTreeWidgetItem(_treeview_pocket);
+      std::string name_str = drug_name(drug_info[drug_idx].id);
+      item->setText(0, QString::fromStdString(name_str));
+      item->setText(1, QString::number(_gameState.player_qty[drug_idx]));
+      item->setText(2, QString::fromStdString(
+                           money_string(_gameState.player_price[drug_idx])));
+      item->setData(0, Qt::UserRole, drug_idx);
+      item->setTextAlignment(1, Qt::AlignRight | Qt::AlignVCenter);
+      item->setTextAlignment(2, Qt::AlignRight | Qt::AlignVCenter);
+    }
+  }
+}
+
+void MainWindow::_setLabelPocket(int npocket, int capacity) {
   auto str = std::format("You pants pocket ({}/{})", npocket, capacity);
-  if (window_main.label_pocket) {
-    window_main.label_pocket->setText(QString::fromStdString(str));
+  if (_label_pocket) {
+    _label_pocket->setText(QString::fromStdString(str));
   }
-  if (group_pocket) {
-    group_pocket->setTitle(QString::fromStdString(str));
-  }
-}
-
-void set_label_health(int health) {
-  if (window_main.progressbar_health) {
-    window_main.progressbar_health->setValue(health);
+  if (_group_pocket) {
+    _group_pocket->setTitle(QString::fromStdString(str));
   }
 }
 
-void set_label_location(int location) {
+void MainWindow::_setLabelHealth(int health) {
+  if (_progressbar_health) {
+    _progressbar_health->setValue(health);
+  }
+}
+
+void MainWindow::_setLabelLocation(int location) {
   std::string loc_str;
   if (location >= 0 && location < CITY_NUM) {
     loc_str = std::format("{}, {}", city_name(city_info[location].id),
@@ -261,44 +217,44 @@ void set_label_location(int location) {
     loc_str = "Austin, USA";
   }
   auto markup = std::format("<span><b>{}</b></span>", loc_str);
-  if (window_main.label_location) {
-    window_main.label_location->setText(QString::fromStdString(markup));
+  if (_label_location) {
+    _label_location->setText(QString::fromStdString(markup));
   }
 }
 
-void set_label_day(int day) {
+void MainWindow::_setLabelDay(int day) {
   auto markup = std::format("<span><b>{}/30</b></span>", day);
-  if (window_main.label_day) {
-    window_main.label_day->setText(QString::fromStdString(markup));
+  if (_label_day) {
+    _label_day->setText(QString::fromStdString(markup));
   }
 }
 
-void set_label_rank(int rank) {
+void MainWindow::_setLabelRank(int rank) {
   constexpr std::array<const char*, RANK_NUM> rank_str = {
       "wannabe",         "small time operator", "dealer",
       "big time dealer", "distributor",         "drug lord"};
   const char* r = (rank >= 0 && rank < RANK_NUM) ? rank_str[rank] : "wannabe";
   auto markup = std::format("<span><b>{}</b></span>", r);
-  if (window_main.label_rank) {
-    window_main.label_rank->setText(QString::fromStdString(markup));
+  if (_label_rank) {
+    _label_rank->setText(QString::fromStdString(markup));
   }
 }
 
-void set_label_cash(int value) {
+void MainWindow::_setLabelCash(int value) {
   auto markup = std::format("<span><b>{}</b></span>", value);
-  if (window_main.label_cash) {
-    window_main.label_cash->setText(QString::fromStdString(markup));
+  if (_label_cash) {
+    _label_cash->setText(QString::fromStdString(markup));
   }
 }
 
-void set_label_bank(int value) {
+void MainWindow::_setLabelBank(int value) {
   auto markup = std::format("<span><b>{}</b></span>", value);
-  if (window_main.label_bank) {
-    window_main.label_bank->setText(QString::fromStdString(markup));
+  if (_label_bank) {
+    _label_bank->setText(QString::fromStdString(markup));
   }
 }
 
-void set_label_debt(int value) {
+void MainWindow::_setLabelDebt(int value) {
   std::string markup;
   if (value > 0) {
     markup =
@@ -306,122 +262,113 @@ void set_label_debt(int value) {
   } else {
     markup = std::format("<span><b>{}</b></span>", value);
   }
-  if (window_main.label_debt) {
-    window_main.label_debt->setText(QString::fromStdString(markup));
+  if (_label_debt) {
+    _label_debt->setText(QString::fromStdString(markup));
   }
 }
 
-void create_window_main(GameState& game_state) {
-  window_main.game_state = &game_state;
-  window_main.window = new QWidget();
-  window_main.window->setWindowTitle(
-      QString::fromUtf8(kProgramName.data(), kProgramName.size()));
+void MainWindow::_setupWidget() {
+  setWindowTitle(QString::fromUtf8(kProgramName.data(), kProgramName.size()));
 
-  QVBoxLayout* vbox_main = new QVBoxLayout(window_main.window);
+  QVBoxLayout* vbox_main = new QVBoxLayout(this);
   vbox_main->setContentsMargins(5, 5, 5, 5);
   vbox_main->setSpacing(5);
 
-  QGroupBox* frame_info = new QGroupBox("Information", window_main.window);
+  QGroupBox* frame_info = new QGroupBox("Information", this);
   QVBoxLayout* vbox_info = new QVBoxLayout(frame_info);
   vbox_info->setContentsMargins(5, 5, 5, 5);
-  window_main.textview_information = new QTextEdit(frame_info);
-  window_main.textview_information->setReadOnly(true);
-  window_main.textview_information->setFixedHeight(120);
-  vbox_info->addWidget(window_main.textview_information);
+  _textview_information = new QTextEdit(frame_info);
+  _textview_information->setReadOnly(true);
+  _textview_information->setFixedHeight(120);
+  vbox_info->addWidget(_textview_information);
   vbox_main->addWidget(frame_info);
 
   QHBoxLayout* hbox_down = new QHBoxLayout();
   hbox_down->setSpacing(8);
   vbox_main->addLayout(hbox_down);
 
-  QGroupBox* frame_market = new QGroupBox("The Market", window_main.window);
+  QGroupBox* frame_market = new QGroupBox("The Market", this);
   QVBoxLayout* vbox_market = new QVBoxLayout(frame_market);
   vbox_market->setContentsMargins(5, 5, 5, 5);
-  window_main.treeview_market = create_treeview_drug(true);
-  window_main.treeview_market->setMinimumSize(270, 240);
-  vbox_market->addWidget(window_main.treeview_market);
+  _treeview_market = create_treeview_drug(true);
+  _treeview_market->setMinimumSize(270, 240);
+  vbox_market->addWidget(_treeview_market);
   hbox_down->addWidget(frame_market);
 
   QVBoxLayout* vbox_middle = new QVBoxLayout();
   vbox_middle->setSpacing(5);
   hbox_down->addLayout(vbox_middle);
 
-  QGroupBox* frame_action = new QGroupBox("Action", window_main.window);
+  QGroupBox* frame_action = new QGroupBox("Action", this);
   QVBoxLayout* box_action = new QVBoxLayout(frame_action);
   box_action->setContentsMargins(5, 5, 5, 5);
   box_action->setSpacing(3);
 
-  window_main.button_buy =
-      new QPushButton(QString::fromUtf8("&Buy \u2192"), frame_action);
-  QObject::connect(window_main.button_buy, &QPushButton::clicked,
-                   window_main_button_buy_clicked_cb);
-  box_action->addWidget(window_main.button_buy);
+  _button_buy = new QPushButton(QString::fromUtf8("&Buy \u2192"), frame_action);
+  connect(_button_buy, &QPushButton::clicked, this, &MainWindow::slotBuy);
+  box_action->addWidget(_button_buy);
 
-  window_main.button_sell =
+  _button_sell =
       new QPushButton(QString::fromUtf8("\u2190 &Sell"), frame_action);
-  QObject::connect(window_main.button_sell, &QPushButton::clicked,
-                   window_main_button_sell_clicked_cb);
-  box_action->addWidget(window_main.button_sell);
+  connect(_button_sell, &QPushButton::clicked, this, &MainWindow::slotSell);
+  box_action->addWidget(_button_sell);
 
-  window_main.button_dump = new QPushButton("&Dump", frame_action);
-  QObject::connect(window_main.button_dump, &QPushButton::clicked,
-                   window_main_button_dump_clicked_cb);
-  box_action->addWidget(window_main.button_dump);
+  _button_dump = new QPushButton("&Dump", frame_action);
+  connect(_button_dump, &QPushButton::clicked, this, &MainWindow::slotDump);
+  box_action->addWidget(_button_dump);
 
-  window_main.button_places = new QPushButton("Places...", frame_action);
-  create_places_menu(window_main.button_places);
-  box_action->addWidget(window_main.button_places);
+  _button_places = new QPushButton("Places...", frame_action);
+  _createPlacesMenu(_button_places);
+  box_action->addWidget(_button_places);
 
-  window_main.button_info = new QPushButton("Info...", frame_action);
-  create_info_menu(window_main.button_info);
-  box_action->addWidget(window_main.button_info);
+  _button_info = new QPushButton("Info...", frame_action);
+  _createInfoMenu(_button_info);
+  box_action->addWidget(_button_info);
 
   vbox_middle->addWidget(frame_action);
 
-  QGroupBox* frame_tomorrow = new QGroupBox("Tomorrow", window_main.window);
+  QGroupBox* frame_tomorrow = new QGroupBox("Tomorrow", this);
   QVBoxLayout* box_tomorrow = new QVBoxLayout(frame_tomorrow);
   box_tomorrow->setContentsMargins(5, 5, 5, 5);
   box_tomorrow->setSpacing(3);
 
-  window_main.button_stayhere = new QPushButton("Stay Here", frame_tomorrow);
-  QObject::connect(window_main.button_stayhere, &QPushButton::clicked,
-                   window_main_button_stayhere_clicked_cb);
-  box_tomorrow->addWidget(window_main.button_stayhere);
+  _button_stayhere = new QPushButton("Stay Here", frame_tomorrow);
+  connect(_button_stayhere, &QPushButton::clicked, this,
+          &MainWindow::slotStayHere);
+  box_tomorrow->addWidget(_button_stayhere);
 
-  window_main.button_flyaway = new QPushButton("Fly Away", frame_tomorrow);
-  QObject::connect(window_main.button_flyaway, &QPushButton::clicked,
-                   window_main_button_flyaway_clicked_cb);
-  box_tomorrow->addWidget(window_main.button_flyaway);
+  _button_flyaway = new QPushButton("Fly Away", frame_tomorrow);
+  connect(_button_flyaway, &QPushButton::clicked, this,
+          &MainWindow::slotFlyAway);
+  box_tomorrow->addWidget(_button_flyaway);
 
   vbox_middle->addWidget(frame_tomorrow);
 
-  QGroupBox* frame_game = new QGroupBox("Game", window_main.window);
+  QGroupBox* frame_game = new QGroupBox("Game", this);
   QVBoxLayout* box_game = new QVBoxLayout(frame_game);
   box_game->setContentsMargins(5, 5, 5, 5);
   box_game->setSpacing(3);
 
-  window_main.checkbutton_sound = new QCheckBox("Sou&nd", frame_game);
-  box_game->addWidget(window_main.checkbutton_sound);
+  _checkbutton_sound = new QCheckBox("Sou&nd", frame_game);
+  box_game->addWidget(_checkbutton_sound);
 
-  window_main.button_about = new QPushButton("&About", frame_game);
-  QObject::connect(window_main.button_about, &QPushButton::clicked,
-                   window_main_button_about_clicked_cb);
-  box_game->addWidget(window_main.button_about);
+  _button_about = new QPushButton("&About", frame_game);
+  connect(_button_about, &QPushButton::clicked, this, &MainWindow::slotAbout);
+  box_game->addWidget(_button_about);
 
-  window_main.button_docs = new QPushButton("Docs", frame_game);
-  QObject::connect(window_main.button_docs, &QPushButton::clicked,
-                   window_main_button_docs_clicked_cb);
-  box_game->addWidget(window_main.button_docs);
+  _button_docs = new QPushButton("Docs", frame_game);
+  connect(_button_docs, &QPushButton::clicked, this, &MainWindow::slotDocs);
+  box_game->addWidget(_button_docs);
 
-  window_main.button_highscores = new QPushButton("High Scores", frame_game);
-  QObject::connect(window_main.button_highscores, &QPushButton::clicked,
-                   window_main_button_highscores_clicked_cb);
-  box_game->addWidget(window_main.button_highscores);
+  _button_highscores = new QPushButton("High Scores", frame_game);
+  connect(_button_highscores, &QPushButton::clicked, this,
+          &MainWindow::slotHighscores);
+  box_game->addWidget(_button_highscores);
 
-  window_main.button_newgamequit = new QPushButton("New &Game", frame_game);
-  QObject::connect(window_main.button_newgamequit, &QPushButton::clicked,
-                   window_main_button_newgamequit_clicked_cb);
-  box_game->addWidget(window_main.button_newgamequit);
+  _button_newgamequit = new QPushButton("New &Game", frame_game);
+  connect(_button_newgamequit, &QPushButton::clicked, this,
+          &MainWindow::slotNewGameQuit);
+  box_game->addWidget(_button_newgamequit);
 
   vbox_middle->addWidget(frame_game);
   vbox_middle->addStretch();
@@ -430,23 +377,23 @@ void create_window_main(GameState& game_state) {
   vbox_right->setSpacing(5);
   hbox_down->addLayout(vbox_right);
 
-  group_pocket =
+  _group_pocket =
       new QGroupBox(QString::fromStdString(std::format(
-                        "You pants pocket ({}/{})", game_state.pocket,
-                        game_state.pocket_capacity)),
-                    window_main.window);
-  QVBoxLayout* vbox_pocket = new QVBoxLayout(group_pocket);
+                        "You pants pocket ({}/{})", _gameState.pocket,
+                        _gameState.pocket_capacity)),
+                    this);
+  QVBoxLayout* vbox_pocket = new QVBoxLayout(_group_pocket);
   vbox_pocket->setContentsMargins(5, 5, 5, 5);
-  window_main.label_pocket = new QLabel(group_pocket);
-  window_main.label_pocket->hide();
-  set_label_frame_pocket(game_state.pocket, game_state.pocket_capacity);
+  _label_pocket = new QLabel(_group_pocket);
+  _label_pocket->hide();
+  _setLabelPocket(_gameState.pocket, _gameState.pocket_capacity);
 
-  window_main.treeview_pocket = create_treeview_drug(false);
-  window_main.treeview_pocket->setMinimumSize(250, 180);
-  vbox_pocket->addWidget(window_main.treeview_pocket);
-  vbox_right->addWidget(group_pocket);
+  _treeview_pocket = create_treeview_drug(false);
+  _treeview_pocket->setMinimumSize(250, 180);
+  vbox_pocket->addWidget(_treeview_pocket);
+  vbox_right->addWidget(_group_pocket);
 
-  QGroupBox* frame_status = new QGroupBox("Status", window_main.window);
+  QGroupBox* frame_status = new QGroupBox("Status", this);
   QVBoxLayout* vbox_status = new QVBoxLayout(frame_status);
   vbox_status->setContentsMargins(5, 5, 5, 5);
   vbox_status->setSpacing(5);
@@ -455,9 +402,9 @@ void create_window_main(GameState& game_state) {
   box_loc->setSpacing(10);
   QLabel* label_loc_title = new QLabel("Location:", frame_status);
   box_loc->addWidget(label_loc_title);
-  window_main.label_location = new QLabel(frame_status);
-  set_label_location(game_state.location);
-  box_loc->addWidget(window_main.label_location);
+  _label_location = new QLabel(frame_status);
+  _setLabelLocation(_gameState.location);
+  box_loc->addWidget(_label_location);
   box_loc->addStretch();
   vbox_status->addLayout(box_loc);
 
@@ -465,11 +412,11 @@ void create_window_main(GameState& game_state) {
   box_health->setSpacing(10);
   QLabel* label_health_title = new QLabel("Health:", frame_status);
   box_health->addWidget(label_health_title);
-  window_main.progressbar_health = new QProgressBar(frame_status);
-  window_main.progressbar_health->setRange(0, 100);
-  window_main.progressbar_health->setValue(game_state.health);
-  window_main.progressbar_health->setTextVisible(false);
-  box_health->addWidget(window_main.progressbar_health);
+  _progressbar_health = new QProgressBar(frame_status);
+  _progressbar_health->setRange(0, 100);
+  _progressbar_health->setValue(_gameState.health);
+  _progressbar_health->setTextVisible(false);
+  box_health->addWidget(_progressbar_health);
   vbox_status->addLayout(box_health);
 
   QHBoxLayout* box_day_rank = new QHBoxLayout();
@@ -479,18 +426,18 @@ void create_window_main(GameState& game_state) {
   box_day->setSpacing(10);
   QLabel* label_day_title = new QLabel("Day:", frame_status);
   box_day->addWidget(label_day_title);
-  window_main.label_day = new QLabel(frame_status);
-  set_label_day(game_state.day);
-  box_day->addWidget(window_main.label_day);
+  _label_day = new QLabel(frame_status);
+  _setLabelDay(_gameState.day);
+  box_day->addWidget(_label_day);
   box_day_rank->addLayout(box_day);
 
   QHBoxLayout* box_rank = new QHBoxLayout();
   box_rank->setSpacing(10);
   QLabel* label_rank_title = new QLabel("Rank:", frame_status);
   box_rank->addWidget(label_rank_title);
-  window_main.label_rank = new QLabel(frame_status);
-  set_label_rank(game_state.rank);
-  box_rank->addWidget(window_main.label_rank);
+  _label_rank = new QLabel(frame_status);
+  _setLabelRank(_gameState.rank);
+  box_rank->addWidget(_label_rank);
   box_day_rank->addLayout(box_rank);
   box_day_rank->addStretch();
   vbox_status->addLayout(box_day_rank);
@@ -504,53 +451,189 @@ void create_window_main(GameState& game_state) {
 
   QLabel* label_cash_title = new QLabel("Cash:", frame_status);
   grid_money->addWidget(label_cash_title, 0, 0, Qt::AlignLeft);
-  window_main.label_cash = new QLabel(frame_status);
-  set_label_cash(game_state.cash);
-  grid_money->addWidget(window_main.label_cash, 0, 1, Qt::AlignRight);
+  _label_cash = new QLabel(frame_status);
+  _setLabelCash(_gameState.cash);
+  grid_money->addWidget(_label_cash, 0, 1, Qt::AlignRight);
 
   QLabel* label_bank_title = new QLabel("Bank:", frame_status);
   grid_money->addWidget(label_bank_title, 1, 0, Qt::AlignLeft);
-  window_main.label_bank = new QLabel(frame_status);
-  set_label_bank(game_state.bank);
-  grid_money->addWidget(window_main.label_bank, 1, 1, Qt::AlignRight);
+  _label_bank = new QLabel(frame_status);
+  _setLabelBank(_gameState.bank);
+  grid_money->addWidget(_label_bank, 1, 1, Qt::AlignRight);
 
   QLabel* label_debt_title = new QLabel("Debt:", frame_status);
   grid_money->addWidget(label_debt_title, 2, 0, Qt::AlignLeft);
-  window_main.label_debt = new QLabel(frame_status);
-  set_label_debt(game_state.debt);
-  grid_money->addWidget(window_main.label_debt, 2, 1, Qt::AlignRight);
+  _label_debt = new QLabel(frame_status);
+  _setLabelDebt(_gameState.debt);
+  grid_money->addWidget(_label_debt, 2, 1, Qt::AlignRight);
 
   box_money_status->addLayout(grid_money);
 
-  window_main.drawingarea_status = new QWidget(frame_status);
-  box_money_status->addWidget(window_main.drawingarea_status);
+  _drawingarea_status = new QWidget(frame_status);
+  box_money_status->addWidget(_drawingarea_status);
   vbox_status->addLayout(box_money_status);
 
   vbox_right->addWidget(frame_status);
 
-  window_main.shortcut_quit =
-      new QShortcut(QKeySequence::Quit, window_main.window);
-  QObject::connect(window_main.shortcut_quit, &QShortcut::activated,
-                   window_main.window, &QWidget::close);
+  _shortcut_quit = new QShortcut(QKeySequence::Quit, this);
+  connect(_shortcut_quit, &QShortcut::activated, this, &QWidget::close);
 
-  update_all_ui(game_state);
-
-  window_main.window->layout()->setSizeConstraint(QLayout::SetFixedSize);
+  layout()->setSizeConstraint(QLayout::SetFixedSize);
 }
 
-void create_window_finance() {
-  if (window_finance.window) {
-    delete window_finance.window;
-  }
-  window_finance.window = new QDialog(window_main.window);
-  window_finance.window->setWindowTitle("Finance");
-  window_finance.window->setModal(true);
+QMenu* MainWindow::_createPlacesMenu(QPushButton* button) {
+  QMenu* menu = new QMenu(button);
+  menu->addAction("Finances...", this, &MainWindow::slotPlacesFinances);
+  menu->addAction("Shopping...", this, &MainWindow::slotPlacesShopping);
+  menu->addAction("Hospital...", this, &MainWindow::slotPlacesHospital);
+  menu->addAction("Vault...", this, &MainWindow::slotPlacesVault);
+  menu->addAction("Shipping...", this, &MainWindow::slotPlacesShipping);
+  button->setMenu(menu);
+  return menu;
+}
 
-  QVBoxLayout* vbox_main = new QVBoxLayout(window_finance.window);
+QMenu* MainWindow::_createInfoMenu(QPushButton* button) {
+  QMenu* menu = new QMenu(button);
+  menu->addAction("Vaults...", this, &MainWindow::slotInfoVaults);
+  menu->addAction("World Drug Prices...", this,
+                  &MainWindow::slotInfoWorldDrugPrices);
+  menu->addAction("World Cities...", this, &MainWindow::slotInfoWorldCities);
+  menu->addAction("Shipment Status...", this,
+                  &MainWindow::slotInfoShipmentStatus);
+  menu->addAction("History...", this, &MainWindow::slotInfoHistory);
+  button->setMenu(menu);
+  return menu;
+}
+
+// MainWindow control methods
+void MainWindow::showFinance() { menuitem_places_finances_activate_cb(*this); }
+void MainWindow::showShopping() { menuitem_places_shopping_activate_cb(*this); }
+void MainWindow::showHospital() { menuitem_places_hospital_activate_cb(*this); }
+void MainWindow::showVault() { menuitem_places_vault_activate_cb(*this); }
+void MainWindow::showWorldDrugPrices() {
+  menuitem_info_world_drug_prices_activate_cb(*this);
+}
+void MainWindow::showWorldCities() {
+  menuitem_info_world_cities_activate_cb(*this);
+}
+void MainWindow::showShipping() { menuitem_places_shipping_activate_cb(*this); }
+void MainWindow::showVaultsInfo() { menuitem_info_vaults_activate_cb(*this); }
+void MainWindow::showShipmentStatus() {
+  menuitem_info_shipment_status_activate_cb(*this);
+}
+void MainWindow::showHistory() { menuitem_info_history_activate_cb(*this); }
+void MainWindow::showFlyAway() { window_main_button_flyaway_clicked_cb(*this); }
+void MainWindow::showAbout() { window_main_button_about_clicked_cb(*this); }
+void MainWindow::showDocs() { window_main_button_docs_clicked_cb(*this); }
+void MainWindow::showHighscores() {
+  window_main_button_highscores_clicked_cb(*this);
+}
+void MainWindow::buyDrug() { window_main_button_buy_clicked_cb(*this); }
+void MainWindow::sellDrug() { window_main_button_sell_clicked_cb(*this); }
+void MainWindow::dumpDrug() { window_main_button_dump_clicked_cb(*this); }
+void MainWindow::stayHere() { window_main_button_stayhere_clicked_cb(*this); }
+void MainWindow::newGame() { window_main_button_newgamequit_clicked_cb(*this); }
+
+// MainWindow slots
+void MainWindow::slotBuy() { buyDrug(); }
+void MainWindow::slotSell() { sellDrug(); }
+void MainWindow::slotDump() { dumpDrug(); }
+void MainWindow::slotPlacesFinances() { showFinance(); }
+void MainWindow::slotPlacesShopping() { showShopping(); }
+void MainWindow::slotPlacesHospital() { showHospital(); }
+void MainWindow::slotPlacesVault() { showVault(); }
+void MainWindow::slotPlacesShipping() { showShipping(); }
+void MainWindow::slotInfoVaults() { showVaultsInfo(); }
+void MainWindow::slotInfoWorldDrugPrices() { showWorldDrugPrices(); }
+void MainWindow::slotInfoWorldCities() { showWorldCities(); }
+void MainWindow::slotInfoShipmentStatus() { showShipmentStatus(); }
+void MainWindow::slotInfoHistory() { showHistory(); }
+void MainWindow::slotStayHere() { stayHere(); }
+void MainWindow::slotFlyAway() { showFlyAway(); }
+void MainWindow::slotAbout() { showAbout(); }
+void MainWindow::slotDocs() { showDocs(); }
+void MainWindow::slotHighscores() { showHighscores(); }
+void MainWindow::slotNewGameQuit() { newGame(); }
+
+// WindowFinance Implementation
+
+WindowFinance::WindowFinance(GameState& gameState, QWidget* parent)
+    : QDialog(parent), _gameState(gameState) {
+  _setupWidget();
+}
+
+void WindowFinance::updateFinanceLabels() {
+  if (_label_cash) {
+    _label_cash->setText(QString::fromStdString(money_string(_gameState.cash)));
+  }
+  if (_label_bank) {
+    _label_bank->setText(QString::fromStdString(money_string(_gameState.bank)));
+  }
+  if (_label_debt) {
+    _label_debt->setText(QString::fromStdString(money_string(_gameState.debt)));
+  }
+}
+
+void WindowFinance::onDoItClicked() {
+  int amount = _spinbutton_amount->value();
+
+  if (_radiobutton_depositsome->isChecked()) {
+    amount = std::min(amount, _gameState.cash);
+    _gameState.cash -= amount;
+    _gameState.bank += amount;
+  } else if (_radiobutton_depositall->isChecked()) {
+    _gameState.bank += _gameState.cash;
+    _gameState.cash = 0;
+  } else if (_radiobutton_depositallbut->isChecked()) {
+    if (_gameState.cash > amount) {
+      int deposit = _gameState.cash - amount;
+      _gameState.cash = amount;
+      _gameState.bank += deposit;
+    }
+  } else if (_radiobutton_withdrawsome->isChecked()) {
+    amount = std::min(amount, _gameState.bank);
+    _gameState.bank -= amount;
+    _gameState.cash += amount;
+  } else if (_radiobutton_withdrawall->isChecked()) {
+    _gameState.cash += _gameState.bank;
+    _gameState.bank = 0;
+  } else if (_radiobutton_withdrawallbut->isChecked()) {
+    if (_gameState.bank > amount) {
+      int withdraw = _gameState.bank - amount;
+      _gameState.bank = amount;
+      _gameState.cash += withdraw;
+    }
+  }
+
+  updateFinanceLabels();
+  emit stateChanged();
+}
+
+void WindowFinance::onBorrowClicked() {
+  int amount = 2000;
+  _gameState.cash += amount;
+  _gameState.debt += amount;
+  updateFinanceLabels();
+  emit stateChanged();
+}
+
+void WindowFinance::onRepayClicked() {
+  int amount = std::min(_gameState.cash, _gameState.debt);
+  _gameState.cash -= amount;
+  _gameState.debt -= amount;
+  updateFinanceLabels();
+  emit stateChanged();
+}
+
+void WindowFinance::_setupWidget() {
+  setWindowTitle("Finance");
+  setModal(true);
+
+  QVBoxLayout* vbox_main = new QVBoxLayout(this);
   vbox_main->setContentsMargins(5, 5, 5, 5);
   vbox_main->setSpacing(5);
 
-  QGroupBox* frame_bank = new QGroupBox("Bank", window_finance.window);
+  QGroupBox* frame_bank = new QGroupBox("Bank", this);
   QVBoxLayout* vbox_bank = new QVBoxLayout(frame_bank);
   vbox_bank->setContentsMargins(5, 5, 5, 5);
   vbox_bank->setSpacing(3);
@@ -561,15 +644,15 @@ void create_window_finance() {
   QHBoxLayout* hbox_cash = new QHBoxLayout();
   hbox_cash->setSpacing(20);
   hbox_cash->addWidget(new QLabel("Cash:", frame_bank));
-  window_finance.label_cash = new QLabel("0", frame_bank);
-  hbox_cash->addWidget(window_finance.label_cash);
+  _label_cash = new QLabel("0", frame_bank);
+  hbox_cash->addWidget(_label_cash);
   hbox_cash_bank->addLayout(hbox_cash);
 
   QHBoxLayout* hbox_bank_val = new QHBoxLayout();
   hbox_bank_val->setSpacing(20);
   hbox_bank_val->addWidget(new QLabel("In Bank:", frame_bank));
-  window_finance.label_bank = new QLabel("0", frame_bank);
-  hbox_bank_val->addWidget(window_finance.label_bank);
+  _label_bank = new QLabel("0", frame_bank);
+  hbox_bank_val->addWidget(_label_bank);
   hbox_cash_bank->addLayout(hbox_bank_val);
   hbox_cash_bank->addStretch();
   vbox_bank->addLayout(hbox_cash_bank);
@@ -579,66 +662,61 @@ void create_window_finance() {
   grid_radios->setVerticalSpacing(3);
 
   QButtonGroup* radio_group = new QButtonGroup(frame_bank);
-  window_finance.radiobutton_depositsome =
-      new QRadioButton("Deposit some", frame_bank);
-  window_finance.radiobutton_depositall =
-      new QRadioButton("Deposit all", frame_bank);
-  window_finance.radiobutton_depositallbut =
-      new QRadioButton("Deposit all but", frame_bank);
-  window_finance.radiobutton_withdrawsome =
-      new QRadioButton("Withdraw some", frame_bank);
-  window_finance.radiobutton_withdrawall =
-      new QRadioButton("Withdraw all", frame_bank);
-  window_finance.radiobutton_withdrawallbut =
+  _radiobutton_depositsome = new QRadioButton("Deposit some", frame_bank);
+  _radiobutton_depositall = new QRadioButton("Deposit all", frame_bank);
+  _radiobutton_depositallbut = new QRadioButton("Deposit all but", frame_bank);
+  _radiobutton_withdrawsome = new QRadioButton("Withdraw some", frame_bank);
+  _radiobutton_withdrawall = new QRadioButton("Withdraw all", frame_bank);
+  _radiobutton_withdrawallbut =
       new QRadioButton("Withdraw all but", frame_bank);
 
-  radio_group->addButton(window_finance.radiobutton_depositsome);
-  radio_group->addButton(window_finance.radiobutton_depositall);
-  radio_group->addButton(window_finance.radiobutton_depositallbut);
-  radio_group->addButton(window_finance.radiobutton_withdrawsome);
-  radio_group->addButton(window_finance.radiobutton_withdrawall);
-  radio_group->addButton(window_finance.radiobutton_withdrawallbut);
-  window_finance.radiobutton_depositsome->setChecked(true);
+  radio_group->addButton(_radiobutton_depositsome);
+  radio_group->addButton(_radiobutton_depositall);
+  radio_group->addButton(_radiobutton_depositallbut);
+  radio_group->addButton(_radiobutton_withdrawsome);
+  radio_group->addButton(_radiobutton_withdrawall);
+  radio_group->addButton(_radiobutton_withdrawallbut);
+  _radiobutton_depositsome->setChecked(true);
 
-  grid_radios->addWidget(window_finance.radiobutton_depositsome, 0, 0);
-  grid_radios->addWidget(window_finance.radiobutton_depositall, 0, 1);
-  grid_radios->addWidget(window_finance.radiobutton_depositallbut, 0, 2);
-  grid_radios->addWidget(window_finance.radiobutton_withdrawsome, 1, 0);
-  grid_radios->addWidget(window_finance.radiobutton_withdrawall, 1, 1);
-  grid_radios->addWidget(window_finance.radiobutton_withdrawallbut, 1, 2);
+  grid_radios->addWidget(_radiobutton_depositsome, 0, 0);
+  grid_radios->addWidget(_radiobutton_depositall, 0, 1);
+  grid_radios->addWidget(_radiobutton_depositallbut, 0, 2);
+  grid_radios->addWidget(_radiobutton_withdrawsome, 1, 0);
+  grid_radios->addWidget(_radiobutton_withdrawall, 1, 1);
+  grid_radios->addWidget(_radiobutton_withdrawallbut, 1, 2);
   vbox_bank->addLayout(grid_radios);
 
   QHBoxLayout* hbox_amount = new QHBoxLayout();
   hbox_amount->setSpacing(10);
   hbox_amount->addWidget(new QLabel("Amount", frame_bank));
-  window_finance.spinbutton_amount = new QSpinBox(frame_bank);
-  window_finance.spinbutton_amount->setRange(1, 1000000000);
-  window_finance.spinbutton_amount->setValue(1);
-  hbox_amount->addWidget(window_finance.spinbutton_amount);
-  window_finance.button_doit = new QPushButton("Do it!", frame_bank);
-  hbox_amount->addWidget(window_finance.button_doit);
+  _spinbutton_amount = new QSpinBox(frame_bank);
+  _spinbutton_amount->setRange(1, 1000000000);
+  _spinbutton_amount->setValue(1);
+  hbox_amount->addWidget(_spinbutton_amount);
+  _button_doit = new QPushButton("Do it!", frame_bank);
+  hbox_amount->addWidget(_button_doit);
   hbox_amount->addStretch();
   vbox_bank->addLayout(hbox_amount);
 
   vbox_main->addWidget(frame_bank);
 
-  QGroupBox* frame_loans = new QGroupBox("Loans", window_finance.window);
+  QGroupBox* frame_loans = new QGroupBox("Loans", this);
   QVBoxLayout* vbox_loans = new QVBoxLayout(frame_loans);
   vbox_loans->setContentsMargins(5, 5, 5, 5);
   vbox_loans->setSpacing(5);
 
-  window_finance.treeview_loan = new QTreeWidget(frame_loans);
-  window_finance.treeview_loan->setRootIsDecorated(false);
-  window_finance.treeview_loan->setColumnCount(6);
-  window_finance.treeview_loan->setHeaderLabels(
+  _treeview_loan = new QTreeWidget(frame_loans);
+  _treeview_loan->setRootIsDecorated(false);
+  _treeview_loan->setColumnCount(6);
+  _treeview_loan->setHeaderLabels(
       {"Name", "Pays", "Rate", "Days", "Debt", "Days Left"});
   for (int col = 0; col < 6; ++col) {
-    window_finance.treeview_loan->setColumnWidth(col, 70);
-    window_finance.treeview_loan->headerItem()->setTextAlignment(
+    _treeview_loan->setColumnWidth(col, 70);
+    _treeview_loan->headerItem()->setTextAlignment(
         col, Qt::AlignRight | Qt::AlignVCenter);
   }
-  window_finance.treeview_loan->setFixedHeight(170);
-  vbox_loans->addWidget(window_finance.treeview_loan);
+  _treeview_loan->setFixedHeight(170);
+  vbox_loans->addWidget(_treeview_loan);
 
   QHBoxLayout* hbox_debt_actions = new QHBoxLayout();
   hbox_debt_actions->setSpacing(0);
@@ -646,18 +724,18 @@ void create_window_finance() {
   QHBoxLayout* hbox_debt = new QHBoxLayout();
   hbox_debt->setSpacing(20);
   hbox_debt->addWidget(new QLabel("Debt:", frame_loans));
-  window_finance.label_debt = new QLabel("0", frame_loans);
-  hbox_debt->addWidget(window_finance.label_debt);
+  _label_debt = new QLabel("0", frame_loans);
+  hbox_debt->addWidget(_label_debt);
   hbox_debt_actions->addLayout(hbox_debt);
 
   hbox_debt_actions->addStretch();
 
   QHBoxLayout* hbox_borrow_repay = new QHBoxLayout();
   hbox_borrow_repay->setSpacing(3);
-  window_finance.button_borrow = new QPushButton("Borrow", frame_loans);
-  hbox_borrow_repay->addWidget(window_finance.button_borrow);
-  window_finance.button_repay = new QPushButton("Repay", frame_loans);
-  hbox_borrow_repay->addWidget(window_finance.button_repay);
+  _button_borrow = new QPushButton("Borrow", frame_loans);
+  hbox_borrow_repay->addWidget(_button_borrow);
+  _button_repay = new QPushButton("Repay", frame_loans);
+  hbox_borrow_repay->addWidget(_button_repay);
   hbox_debt_actions->addLayout(hbox_borrow_repay);
 
   vbox_loans->addLayout(hbox_debt_actions);
@@ -666,81 +744,101 @@ void create_window_finance() {
   QHBoxLayout* hbox_done = new QHBoxLayout();
   hbox_done->setSpacing(5);
   hbox_done->addStretch();
-  window_finance.button_done = new QPushButton("Done", window_finance.window);
-  QObject::connect(window_finance.button_done, &QPushButton::clicked,
-                   window_finance.window, &QDialog::close);
-  hbox_done->addWidget(window_finance.button_done);
+  _button_done = new QPushButton("Done", this);
+  connect(_button_done, &QPushButton::clicked, this, &QDialog::close);
+  hbox_done->addWidget(_button_done);
   vbox_main->addLayout(hbox_done);
 
-  window_finance.window->layout()->setSizeConstraint(QLayout::SetFixedSize);
+  connect(_button_doit, &QPushButton::clicked, this,
+          &WindowFinance::onDoItClicked);
+  connect(_button_borrow, &QPushButton::clicked, this,
+          &WindowFinance::onBorrowClicked);
+  connect(_button_repay, &QPushButton::clicked, this,
+          &WindowFinance::onRepayClicked);
+
+  updateFinanceLabels();
+  layout()->setSizeConstraint(QLayout::SetFixedSize);
 }
 
-void create_window_shopping() {
-  if (window_shopping.window) {
-    delete window_shopping.window;
-  }
-  window_shopping.window = new QDialog(window_main.window);
-  window_shopping.window->setWindowTitle("Shopping");
-  window_shopping.window->setModal(true);
+// WindowShopping Implementation
 
-  QVBoxLayout* vbox_main = new QVBoxLayout(window_shopping.window);
+WindowShopping::WindowShopping(GameState& gameState, QWidget* parent)
+    : QDialog(parent), _gameState(gameState) {
+  _setupWidget();
+}
+
+void WindowShopping::updateShopping() {
+  if (_label_cash) {
+    _label_cash->setText(QString::fromStdString(money_string(_gameState.cash)));
+  }
+  if (_treeview_store) {
+    _treeview_store->clear();
+    for (int i = 0; i < WEAPON_NUM; ++i) {
+      QTreeWidgetItem* item = new QTreeWidgetItem(_treeview_store);
+      item->setText(COLUMN_STORE_NAME, QString::number(i + 1));
+      item->setText(COLUMN_STORE_TYPE, "Weapon");
+      item->setText(COLUMN_STORE_PRICE,
+                    QString::fromStdString(money_string(weapon_info[i].price)));
+    }
+  }
+}
+
+void WindowShopping::_setupWidget() {
+  setWindowTitle("Shopping");
+  setModal(true);
+
+  QVBoxLayout* vbox_main = new QVBoxLayout(this);
   vbox_main->setContentsMargins(5, 5, 5, 5);
   vbox_main->setSpacing(5);
 
-  QGroupBox* frame_store =
-      new QGroupBox("Store's Inventory", window_shopping.window);
+  QGroupBox* frame_store = new QGroupBox("Store's Inventory", this);
   QVBoxLayout* vbox_store = new QVBoxLayout(frame_store);
   vbox_store->setContentsMargins(5, 5, 5, 5);
   vbox_store->setSpacing(5);
 
-  window_shopping.treeview_store = new QTreeWidget(frame_store);
-  window_shopping.treeview_store->setRootIsDecorated(false);
-  window_shopping.treeview_store->setColumnCount(3);
-  window_shopping.treeview_store->setHeaderLabels({"Name", "Type", "Price"});
-  window_shopping.treeview_store->setColumnWidth(COLUMN_STORE_NAME, 140);
-  window_shopping.treeview_store->setColumnWidth(COLUMN_STORE_TYPE, 100);
-  window_shopping.treeview_store->setColumnWidth(COLUMN_STORE_PRICE, 70);
-  window_shopping.treeview_store->headerItem()->setTextAlignment(
+  _treeview_store = new QTreeWidget(frame_store);
+  _treeview_store->setRootIsDecorated(false);
+  _treeview_store->setColumnCount(3);
+  _treeview_store->setHeaderLabels({"Name", "Type", "Price"});
+  _treeview_store->setColumnWidth(COLUMN_STORE_NAME, 140);
+  _treeview_store->setColumnWidth(COLUMN_STORE_TYPE, 100);
+  _treeview_store->setColumnWidth(COLUMN_STORE_PRICE, 70);
+  _treeview_store->headerItem()->setTextAlignment(
       COLUMN_STORE_NAME, Qt::AlignRight | Qt::AlignVCenter);
-  window_shopping.treeview_store->headerItem()->setTextAlignment(
+  _treeview_store->headerItem()->setTextAlignment(
       COLUMN_STORE_TYPE, Qt::AlignRight | Qt::AlignVCenter);
-  window_shopping.treeview_store->headerItem()->setTextAlignment(
+  _treeview_store->headerItem()->setTextAlignment(
       COLUMN_STORE_PRICE, Qt::AlignRight | Qt::AlignVCenter);
-  window_shopping.treeview_store->setFixedHeight(220);
-  vbox_store->addWidget(window_shopping.treeview_store);
+  _treeview_store->setFixedHeight(220);
+  vbox_store->addWidget(_treeview_store);
 
   QHBoxLayout* hbox_buy = new QHBoxLayout();
   hbox_buy->addStretch();
-  window_shopping.button_buy = new QPushButton("   Buy   ", frame_store);
-  hbox_buy->addWidget(window_shopping.button_buy);
+  _button_buy = new QPushButton("   Buy   ", frame_store);
+  hbox_buy->addWidget(_button_buy);
   vbox_store->addLayout(hbox_buy);
 
   vbox_main->addWidget(frame_store);
 
-  QGroupBox* frame_inv =
-      new QGroupBox("Your Inventory", window_shopping.window);
+  QGroupBox* frame_inv = new QGroupBox("Your Inventory", this);
   QVBoxLayout* vbox_inv = new QVBoxLayout(frame_inv);
   vbox_inv->setContentsMargins(5, 5, 5, 5);
   vbox_inv->setSpacing(5);
 
-  window_shopping.treeview_inventory = new QTreeWidget(frame_inv);
-  window_shopping.treeview_inventory->setRootIsDecorated(false);
-  window_shopping.treeview_inventory->setColumnCount(4);
-  window_shopping.treeview_inventory->setHeaderLabels(
-      {"Name", "Type", "Qty", "Price"});
-  window_shopping.treeview_inventory->setColumnWidth(COLUMN_INVENTORY_NAME,
-                                                     140);
-  window_shopping.treeview_inventory->setColumnWidth(COLUMN_INVENTORY_TYPE,
-                                                     100);
-  window_shopping.treeview_inventory->setColumnWidth(COLUMN_INVENTORY_QTY, 70);
-  window_shopping.treeview_inventory->setColumnWidth(COLUMN_INVENTORY_SELLFOR,
-                                                     70);
+  _treeview_inventory = new QTreeWidget(frame_inv);
+  _treeview_inventory->setRootIsDecorated(false);
+  _treeview_inventory->setColumnCount(4);
+  _treeview_inventory->setHeaderLabels({"Name", "Type", "Qty", "Price"});
+  _treeview_inventory->setColumnWidth(COLUMN_INVENTORY_NAME, 140);
+  _treeview_inventory->setColumnWidth(COLUMN_INVENTORY_TYPE, 100);
+  _treeview_inventory->setColumnWidth(COLUMN_INVENTORY_QTY, 70);
+  _treeview_inventory->setColumnWidth(COLUMN_INVENTORY_SELLFOR, 70);
   for (int col = 0; col < 4; ++col) {
-    window_shopping.treeview_inventory->headerItem()->setTextAlignment(
+    _treeview_inventory->headerItem()->setTextAlignment(
         col, Qt::AlignRight | Qt::AlignVCenter);
   }
-  window_shopping.treeview_inventory->setFixedHeight(150);
-  vbox_inv->addWidget(window_shopping.treeview_inventory);
+  _treeview_inventory->setFixedHeight(150);
+  vbox_inv->addWidget(_treeview_inventory);
 
   QHBoxLayout* hbox_sell_cash = new QHBoxLayout();
   hbox_sell_cash->setSpacing(0);
@@ -748,14 +846,14 @@ void create_window_shopping() {
   QHBoxLayout* hbox_cash = new QHBoxLayout();
   hbox_cash->setSpacing(20);
   hbox_cash->addWidget(new QLabel("Cash:", frame_inv));
-  window_shopping.label_cash = new QLabel("0", frame_inv);
-  hbox_cash->addWidget(window_shopping.label_cash);
+  _label_cash = new QLabel("0", frame_inv);
+  hbox_cash->addWidget(_label_cash);
   hbox_sell_cash->addLayout(hbox_cash);
 
   hbox_sell_cash->addStretch();
 
-  window_shopping.button_sell = new QPushButton("   Sell   ", frame_inv);
-  hbox_sell_cash->addWidget(window_shopping.button_sell);
+  _button_sell = new QPushButton("   Sell   ", frame_inv);
+  hbox_sell_cash->addWidget(_button_sell);
   vbox_inv->addLayout(hbox_sell_cash);
 
   vbox_main->addWidget(frame_inv);
@@ -763,42 +861,67 @@ void create_window_shopping() {
   QHBoxLayout* hbox_done = new QHBoxLayout();
   hbox_done->setSpacing(5);
   hbox_done->addStretch();
-  window_shopping.button_done = new QPushButton("Done", window_shopping.window);
-  QObject::connect(window_shopping.button_done, &QPushButton::clicked,
-                   window_shopping.window, &QDialog::close);
-  hbox_done->addWidget(window_shopping.button_done);
+  _button_done = new QPushButton("Done", this);
+  connect(_button_done, &QPushButton::clicked, this, &QDialog::close);
+  hbox_done->addWidget(_button_done);
   vbox_main->addLayout(hbox_done);
 
-  window_shopping.window->layout()->setSizeConstraint(QLayout::SetFixedSize);
+  updateShopping();
+  layout()->setSizeConstraint(QLayout::SetFixedSize);
 }
 
-void create_window_hospital() {
-  if (window_hospital.window) {
-    delete window_hospital.window;
-  }
-  window_hospital.window = new QDialog(window_main.window);
-  window_hospital.window->setWindowTitle("Hospital");
-  window_hospital.window->setModal(true);
+// WindowHospital Implementation
 
-  QVBoxLayout* vbox_main = new QVBoxLayout(window_hospital.window);
+WindowHospital::WindowHospital(GameState& gameState, QWidget* parent)
+    : QDialog(parent), _gameState(gameState) {
+  _setupWidget();
+}
+
+void WindowHospital::onSliderValueChanged(int val) {
+  int needed = std::max(0, val - _gameState.health);
+  int cost = needed * 50;
+  if (_progressbar_health) {
+    _progressbar_health->setValue(val);
+  }
+  if (_label_cost) {
+    _label_cost->setText(QString::fromStdString(money_string(cost)));
+  }
+}
+
+void WindowHospital::onOkClicked() {
+  int target_health = _scalebutton_health->value();
+  int needed = std::max(0, target_health - _gameState.health);
+  int cost = needed * 50;
+  if (_gameState.cash >= cost) {
+    _gameState.cash -= cost;
+    _gameState.health = target_health;
+    emit stateChanged();
+    close();
+  }
+}
+
+void WindowHospital::_setupWidget() {
+  setWindowTitle("Hospital");
+  setModal(true);
+
+  QVBoxLayout* vbox_main = new QVBoxLayout(this);
   vbox_main->setContentsMargins(5, 5, 5, 5);
   vbox_main->setSpacing(5);
 
   QHBoxLayout* hbox_top = new QHBoxLayout();
   hbox_top->setSpacing(5);
 
-  QGroupBox* frame_icon = new QGroupBox("", window_hospital.window);
+  QGroupBox* frame_icon = new QGroupBox("", this);
   QHBoxLayout* hbox_icon = new QHBoxLayout(frame_icon);
   hbox_icon->setContentsMargins(20, 20, 20, 20);
   QLabel* image_icon = new QLabel(frame_icon);
-  image_icon->setPixmap(window_hospital.window->style()
-                            ->standardIcon(QStyle::SP_MessageBoxInformation)
-                            .pixmap(48, 48));
+  image_icon->setPixmap(
+      style()->standardIcon(QStyle::SP_MessageBoxInformation).pixmap(48, 48));
   hbox_icon->addWidget(image_icon);
   hbox_top->addWidget(frame_icon);
 
-  QGroupBox* frame_slider = new QGroupBox("Move the pointer to desired health",
-                                          window_hospital.window);
+  QGroupBox* frame_slider =
+      new QGroupBox("Move the pointer to desired health", this);
   frame_slider->setFixedWidth(400);
   QVBoxLayout* vbox_slider = new QVBoxLayout(frame_slider);
   vbox_slider->setContentsMargins(5, 5, 5, 5);
@@ -806,17 +929,16 @@ void create_window_hospital() {
 
   QVBoxLayout* vbox_bars = new QVBoxLayout();
   vbox_bars->setSpacing(3);
-  window_hospital.progressbar_health = new QProgressBar(frame_slider);
-  window_hospital.progressbar_health->setRange(0, 100);
-  window_hospital.progressbar_health->setValue(100);
-  window_hospital.progressbar_health->setTextVisible(false);
-  vbox_bars->addWidget(window_hospital.progressbar_health);
+  _progressbar_health = new QProgressBar(frame_slider);
+  _progressbar_health->setRange(0, 100);
+  _progressbar_health->setValue(_gameState.health);
+  _progressbar_health->setTextVisible(false);
+  vbox_bars->addWidget(_progressbar_health);
 
-  window_hospital.scalebutton_health =
-      new QSlider(Qt::Horizontal, frame_slider);
-  window_hospital.scalebutton_health->setRange(1, 100);
-  window_hospital.scalebutton_health->setValue(100);
-  vbox_bars->addWidget(window_hospital.scalebutton_health);
+  _scalebutton_health = new QSlider(Qt::Horizontal, frame_slider);
+  _scalebutton_health->setRange(_gameState.health, 100);
+  _scalebutton_health->setValue(_gameState.health);
+  vbox_bars->addWidget(_scalebutton_health);
   vbox_slider->addLayout(vbox_bars);
 
   QGridLayout* grid_labels = new QGridLayout();
@@ -825,13 +947,14 @@ void create_window_hospital() {
 
   QLabel* label_cash_title = new QLabel("Cash:", frame_slider);
   grid_labels->addWidget(label_cash_title, 0, 0, Qt::AlignRight);
-  window_hospital.label_cash = new QLabel("0", frame_slider);
-  grid_labels->addWidget(window_hospital.label_cash, 0, 1, Qt::AlignLeft);
+  _label_cash = new QLabel(
+      QString::fromStdString(money_string(_gameState.cash)), frame_slider);
+  grid_labels->addWidget(_label_cash, 0, 1, Qt::AlignLeft);
 
   QLabel* label_cost_title = new QLabel("Cost for treatment:", frame_slider);
   grid_labels->addWidget(label_cost_title, 1, 0, Qt::AlignRight);
-  window_hospital.label_cost = new QLabel("0", frame_slider);
-  grid_labels->addWidget(window_hospital.label_cost, 1, 1, Qt::AlignLeft);
+  _label_cost = new QLabel("0", frame_slider);
+  grid_labels->addWidget(_label_cost, 1, 1, Qt::AlignLeft);
   vbox_slider->addLayout(grid_labels);
 
   hbox_top->addWidget(frame_slider);
@@ -841,63 +964,138 @@ void create_window_hospital() {
   hbox_buttons->setSpacing(3);
   hbox_buttons->addStretch();
 
-  window_hospital.button_ok = new QPushButton("&OK", window_hospital.window);
-  hbox_buttons->addWidget(window_hospital.button_ok);
+  _button_ok = new QPushButton("&OK", this);
+  hbox_buttons->addWidget(_button_ok);
 
-  QPushButton* button_cancel =
-      new QPushButton("&Cancel", window_hospital.window);
-  QObject::connect(button_cancel, &QPushButton::clicked, window_hospital.window,
-                   &QDialog::close);
-  hbox_buttons->addWidget(button_cancel);
+  _button_cancel = new QPushButton("&Cancel", this);
+  connect(_button_cancel, &QPushButton::clicked, this, &QDialog::close);
+  hbox_buttons->addWidget(_button_cancel);
 
   vbox_main->addLayout(hbox_buttons);
 
-  window_hospital.window->layout()->setSizeConstraint(QLayout::SetFixedSize);
+  connect(_scalebutton_health, &QSlider::valueChanged, this,
+          &WindowHospital::onSliderValueChanged);
+  connect(_button_ok, &QPushButton::clicked, this,
+          &WindowHospital::onOkClicked);
+
+  layout()->setSizeConstraint(QLayout::SetFixedSize);
 }
 
-void create_window_vault() {
-  if (window_vault.window) {
-    delete window_vault.window;
-  }
-  window_vault.window = new QDialog(window_main.window);
-  window_vault.window->setWindowTitle("The Vault");
-  window_vault.window->setModal(true);
+// WindowVault Implementation
 
-  QVBoxLayout* vbox_main = new QVBoxLayout(window_vault.window);
+WindowVault::WindowVault(GameState& gameState, QWidget* parent)
+    : QDialog(parent), _gameState(gameState) {
+  _setupWidget();
+}
+
+void WindowVault::updateVaultLists() {
+  if (_frame_pocket) {
+    _frame_pocket->setTitle(QString::fromStdString(
+        std::format("You pants pocket ({}/{})", _gameState.pocket,
+                    _gameState.pocket_capacity)));
+  }
+  if (_treeview_pocket) {
+    _treeview_pocket->clear();
+    for (int i = 0; i < DRUG_NUM; ++i) {
+      if (_gameState.player_qty[i] > 0) {
+        QTreeWidgetItem* item = new QTreeWidgetItem(_treeview_pocket);
+        item->setText(0, QString::fromStdString(drug_name(drug_info[i].id)));
+        item->setText(1, QString::number(_gameState.player_qty[i]));
+        item->setText(2, QString::fromStdString(
+                             money_string(_gameState.player_price[i])));
+        item->setData(0, Qt::UserRole, i);
+      }
+    }
+  }
+  if (_treeview_vault) {
+    _treeview_vault->clear();
+    for (int i = 0; i < DRUG_NUM; ++i) {
+      if (_gameState.vault_qty[i] > 0) {
+        QTreeWidgetItem* item = new QTreeWidgetItem(_treeview_vault);
+        item->setText(0, QString::fromStdString(drug_name(drug_info[i].id)));
+        item->setText(1, QString::number(_gameState.vault_qty[i]));
+        item->setText(2, QString::fromStdString(
+                             money_string(_gameState.player_price[i])));
+        item->setData(0, Qt::UserRole, i);
+      }
+    }
+  }
+}
+
+void WindowVault::onIntoVaultClicked() {
+  if (!_treeview_pocket) return;
+  auto* item = _treeview_pocket->currentItem();
+  if (!item) return;
+  int drug_idx = item->data(0, Qt::UserRole).toInt();
+  if (drug_idx >= 0 && drug_idx < DRUG_NUM &&
+      _gameState.player_qty[drug_idx] > 0) {
+    _gameState.player_qty[drug_idx] -= 1;
+    _gameState.pocket -= 1;
+    _gameState.vault_qty[drug_idx] += 1;
+    updateVaultLists();
+    emit stateChanged();
+  }
+}
+
+void WindowVault::onFromVaultClicked() {
+  if (!_treeview_vault) return;
+  auto* item = _treeview_vault->currentItem();
+  if (!item) return;
+  int drug_idx = item->data(0, Qt::UserRole).toInt();
+  if (drug_idx >= 0 && drug_idx < DRUG_NUM &&
+      _gameState.vault_qty[drug_idx] > 0) {
+    if (_gameState.pocket < _gameState.pocket_capacity) {
+      _gameState.vault_qty[drug_idx] -= 1;
+      _gameState.player_qty[drug_idx] += 1;
+      _gameState.pocket += 1;
+      updateVaultLists();
+      emit stateChanged();
+    }
+  }
+}
+
+void WindowVault::_setupWidget() {
+  setWindowTitle("The Vault");
+  setModal(true);
+
+  QVBoxLayout* vbox_main = new QVBoxLayout(this);
   vbox_main->setContentsMargins(5, 5, 5, 5);
   vbox_main->setSpacing(5);
 
   QHBoxLayout* hbox_middle = new QHBoxLayout();
   hbox_middle->setSpacing(5);
 
-  QGroupBox* frame_pocket =
-      new QGroupBox("You pants pocket (0/10)", window_vault.window);
-  QVBoxLayout* vbox_pocket = new QVBoxLayout(frame_pocket);
+  _frame_pocket =
+      new QGroupBox(QString::fromStdString(std::format(
+                        "You pants pocket ({}/{})", _gameState.pocket,
+                        _gameState.pocket_capacity)),
+                    this);
+  QVBoxLayout* vbox_pocket = new QVBoxLayout(_frame_pocket);
   vbox_pocket->setContentsMargins(5, 5, 5, 5);
-  window_vault.treeview_pocket = create_treeview_drug(false);
-  window_vault.treeview_pocket->setFixedHeight(200);
-  vbox_pocket->addWidget(window_vault.treeview_pocket);
-  hbox_middle->addWidget(frame_pocket);
+  _treeview_pocket = create_treeview_drug(false);
+  _treeview_pocket->setFixedHeight(200);
+  vbox_pocket->addWidget(_treeview_pocket);
+  hbox_middle->addWidget(_frame_pocket);
 
-  QGroupBox* frame_move = new QGroupBox("Move", window_vault.window);
+  QGroupBox* frame_move = new QGroupBox("Move", this);
   QVBoxLayout* vbox_move = new QVBoxLayout(frame_move);
   vbox_move->setContentsMargins(5, 5, 5, 5);
   vbox_move->setSpacing(3);
-  window_vault.button_intovault =
+  _button_intovault =
       new QPushButton(QString::fromUtf8("Into Vault \u2192"), frame_move);
-  vbox_move->addWidget(window_vault.button_intovault);
-  window_vault.button_fromvault =
+  vbox_move->addWidget(_button_intovault);
+  _button_fromvault =
       new QPushButton(QString::fromUtf8("\u2190 From Vault"), frame_move);
-  vbox_move->addWidget(window_vault.button_fromvault);
+  vbox_move->addWidget(_button_fromvault);
   vbox_move->addStretch();
   hbox_middle->addWidget(frame_move);
 
-  QGroupBox* frame_vault = new QGroupBox("In the Vault", window_vault.window);
+  QGroupBox* frame_vault = new QGroupBox("In the Vault", this);
   QVBoxLayout* vbox_vault = new QVBoxLayout(frame_vault);
   vbox_vault->setContentsMargins(5, 5, 5, 5);
-  window_vault.treeview_vault = create_treeview_drug(false);
-  window_vault.treeview_vault->setFixedHeight(210);
-  vbox_vault->addWidget(window_vault.treeview_vault);
+  _treeview_vault = create_treeview_drug(false);
+  _treeview_vault->setFixedHeight(210);
+  vbox_vault->addWidget(_treeview_vault);
   hbox_middle->addWidget(frame_vault);
 
   vbox_main->addLayout(hbox_middle);
@@ -906,58 +1104,91 @@ void create_window_vault() {
   hbox_buttons->setSpacing(3);
   hbox_buttons->addStretch();
 
-  window_vault.button_ok = new QPushButton("&OK", window_vault.window);
-  hbox_buttons->addWidget(window_vault.button_ok);
+  _button_ok = new QPushButton("&OK", this);
+  hbox_buttons->addWidget(_button_ok);
 
-  QPushButton* button_cancel = new QPushButton("&Cancel", window_vault.window);
-  QObject::connect(button_cancel, &QPushButton::clicked, window_vault.window,
-                   &QDialog::close);
-  hbox_buttons->addWidget(button_cancel);
+  _button_cancel = new QPushButton("&Cancel", this);
+  connect(_button_cancel, &QPushButton::clicked, this, &QDialog::close);
+  hbox_buttons->addWidget(_button_cancel);
 
   vbox_main->addLayout(hbox_buttons);
 
-  window_vault.window->layout()->setSizeConstraint(QLayout::SetFixedSize);
+  connect(_button_intovault, &QPushButton::clicked, this,
+          &WindowVault::onIntoVaultClicked);
+  connect(_button_fromvault, &QPushButton::clicked, this,
+          &WindowVault::onFromVaultClicked);
+  connect(_button_ok, &QPushButton::clicked, this, &QDialog::close);
+
+  updateVaultLists();
+  layout()->setSizeConstraint(QLayout::SetFixedSize);
 }
 
-void create_window_world_drug_prices() {
-  if (window_world_drug_prices.window) {
-    delete window_world_drug_prices.window;
-  }
-  window_world_drug_prices.window = new QDialog(window_main.window);
-  window_world_drug_prices.window->setWindowTitle(
-      QString::fromUtf8("World Drug Prices"));
-  window_world_drug_prices.window->setModal(true);
+// WindowWorldDrugPrices Implementation
 
-  QVBoxLayout* vbox_main = new QVBoxLayout(window_world_drug_prices.window);
+WindowWorldDrugPrices::WindowWorldDrugPrices(const GameState& gameState,
+                                             QWidget* parent)
+    : QDialog(parent), _gameState(gameState) {
+  _setupWidget();
+}
+
+void WindowWorldDrugPrices::fillCityList(int drug_idx) {
+  if (!_treeview_city) return;
+  _treeview_city->clear();
+  int day = _gameState.day;
+  for (int city_idx = 0; city_idx < CITY_NUM; ++city_idx) {
+    QTreeWidgetItem* item = new QTreeWidgetItem(_treeview_city);
+    std::string text = std::format("{}, {}", city_name(city_info[city_idx].id),
+                                   country_name(city_info[city_idx].country));
+    item->setText(0, QString::fromStdString(text));
+    item->setText(
+        1, QString::number(_gameState.drug_table[drug_idx][city_idx][day].qty));
+    item->setText(2,
+                  QString::fromStdString(money_string(
+                      _gameState.drug_table[drug_idx][city_idx][day].price)));
+    item->setTextAlignment(1, Qt::AlignRight | Qt::AlignVCenter);
+    item->setTextAlignment(2, Qt::AlignRight | Qt::AlignVCenter);
+  }
+}
+
+void WindowWorldDrugPrices::onDrugItemClicked(QTreeWidgetItem* item,
+                                              int column) {
+  (void)column;
+  if (!item) return;
+  int drug_idx = item->data(0, Qt::UserRole).toInt();
+  fillCityList(drug_idx);
+}
+
+void WindowWorldDrugPrices::_setupWidget() {
+  setWindowTitle(QString::fromUtf8("World Drug Prices"));
+  setModal(true);
+
+  QVBoxLayout* vbox_main = new QVBoxLayout(this);
   vbox_main->setContentsMargins(5, 5, 5, 5);
   vbox_main->setSpacing(5);
 
   QHBoxLayout* hbox_top = new QHBoxLayout();
   hbox_top->setSpacing(5);
 
-  QGroupBox* frame_drug =
-      new QGroupBox("Drug", window_world_drug_prices.window);
+  QGroupBox* frame_drug = new QGroupBox("Drug", this);
   QVBoxLayout* vbox_drug = new QVBoxLayout(frame_drug);
   vbox_drug->setContentsMargins(5, 5, 5, 5);
-  window_world_drug_prices.treeview_drug = create_treeview_drug_names();
-  window_world_drug_prices.treeview_drug->setFixedHeight(210);
-  window_world_drug_prices.treeview_drug->clear();
+  _treeview_drug = create_treeview_drug_names();
+  _treeview_drug->setFixedHeight(210);
+  _treeview_drug->clear();
   for (int i = 0; i < DRUG_NUM; ++i) {
-    QTreeWidgetItem* item =
-        new QTreeWidgetItem(window_world_drug_prices.treeview_drug);
+    QTreeWidgetItem* item = new QTreeWidgetItem(_treeview_drug);
     item->setData(0, Qt::UserRole, i);
     item->setText(0, QString::fromStdString(drug_name(drug_info[i].id)));
   }
-  vbox_drug->addWidget(window_world_drug_prices.treeview_drug);
+  vbox_drug->addWidget(_treeview_drug);
   hbox_top->addWidget(frame_drug);
 
-  QGroupBox* frame_city =
-      new QGroupBox("City List", window_world_drug_prices.window);
+  QGroupBox* frame_city = new QGroupBox("City List", this);
   QVBoxLayout* vbox_city = new QVBoxLayout(frame_city);
   vbox_city->setContentsMargins(5, 5, 5, 5);
-  window_world_drug_prices.treeview_city = create_treeview_city_list();
-  window_world_drug_prices.treeview_city->setFixedHeight(210);
-  vbox_city->addWidget(window_world_drug_prices.treeview_city);
+  _treeview_city = create_treeview_city_list();
+  _treeview_city->setFixedHeight(210);
+  vbox_city->addWidget(_treeview_city);
   hbox_top->addWidget(frame_city);
 
   vbox_main->addLayout(hbox_top);
@@ -966,60 +1197,89 @@ void create_window_world_drug_prices() {
   hbox_bottom->setSpacing(3);
   hbox_bottom->addStretch();
 
-  window_world_drug_prices.button_close =
-      new QPushButton("&Close", window_world_drug_prices.window);
-  QObject::connect(window_world_drug_prices.button_close, &QPushButton::clicked,
-                   window_world_drug_prices.window, &QDialog::close);
-  hbox_bottom->addWidget(window_world_drug_prices.button_close);
+  _button_close = new QPushButton("&Close", this);
+  connect(_button_close, &QPushButton::clicked, this, &QDialog::close);
+  hbox_bottom->addWidget(_button_close);
 
   vbox_main->addLayout(hbox_bottom);
 
-  window_world_drug_prices.window->layout()->setSizeConstraint(
-      QLayout::SetFixedSize);
+  connect(_treeview_drug, &QTreeWidget::itemClicked, this,
+          &WindowWorldDrugPrices::onDrugItemClicked);
+
+  fillCityList(0);
+  layout()->setSizeConstraint(QLayout::SetFixedSize);
 }
 
-void create_window_world_cities() {
-  if (window_world_cities.window) {
-    delete window_world_cities.window;
-  }
-  window_world_cities.window = new QDialog(window_main.window);
-  window_world_cities.window->setWindowTitle(QString::fromUtf8("World Cities"));
-  window_world_cities.window->setModal(true);
+// WindowWorldCities Implementation
 
-  QVBoxLayout* vbox_main = new QVBoxLayout(window_world_cities.window);
+WindowWorldCities::WindowWorldCities(const GameState& gameState,
+                                     QWidget* parent)
+    : QDialog(parent), _gameState(gameState) {
+  _setupWidget();
+}
+
+void WindowWorldCities::fillDrugList(int city_idx) {
+  if (!_treeview_drug) return;
+  _treeview_drug->clear();
+  int day = _gameState.day;
+  for (int drug_idx = 0; drug_idx < DRUG_NUM; ++drug_idx) {
+    QTreeWidgetItem* item = new QTreeWidgetItem(_treeview_drug);
+    std::string name_str = drug_name(drug_info[drug_idx].id);
+    item->setText(0, QString::fromStdString(name_str));
+    item->setText(
+        1, QString::number(_gameState.drug_table[drug_idx][city_idx][day].qty));
+    item->setText(2,
+                  QString::fromStdString(money_string(
+                      _gameState.drug_table[drug_idx][city_idx][day].price)));
+    item->setData(0, Qt::UserRole, drug_idx);
+    item->setTextAlignment(1, Qt::AlignRight | Qt::AlignVCenter);
+    item->setTextAlignment(2, Qt::AlignRight | Qt::AlignVCenter);
+  }
+}
+
+void WindowWorldCities::onCityItemClicked(QTreeWidgetItem* item, int column) {
+  (void)column;
+  if (!item) return;
+  int city_idx = item->data(0, Qt::UserRole).toInt();
+  fillDrugList(city_idx);
+}
+
+void WindowWorldCities::_setupWidget() {
+  setWindowTitle(QString::fromUtf8("World Cities"));
+  setModal(true);
+
+  QVBoxLayout* vbox_main = new QVBoxLayout(this);
   vbox_main->setContentsMargins(5, 5, 5, 5);
   vbox_main->setSpacing(5);
 
   QHBoxLayout* hbox_top = new QHBoxLayout();
   hbox_top->setSpacing(5);
 
-  QGroupBox* frame_city = new QGroupBox("City", window_world_cities.window);
+  QGroupBox* frame_city = new QGroupBox("City", this);
   QVBoxLayout* vbox_city = new QVBoxLayout(frame_city);
   vbox_city->setContentsMargins(5, 5, 5, 5);
-  window_world_cities.treeview_city = create_treeview_city_names();
-  window_world_cities.treeview_city->setFixedHeight(210);
-  window_world_cities.treeview_city->clear();
+  _treeview_city = create_treeview_city_names();
+  _treeview_city->setFixedHeight(210);
+  _treeview_city->clear();
   for (int i = 0; i < CITY_NUM; ++i) {
-    QTreeWidgetItem* item =
-        new QTreeWidgetItem(window_world_cities.treeview_city);
+    QTreeWidgetItem* item = new QTreeWidgetItem(_treeview_city);
     item->setData(0, Qt::UserRole, i);
     std::string text = std::format("{}, {}", city_name(city_info[i].id),
                                    country_name(city_info[i].country));
-    if (i == window_main.game_state->location) {
+    if (i == _gameState.location) {
       text += " (Current)";
     }
     item->setText(0, QString::fromStdString(text));
   }
-  vbox_city->addWidget(window_world_cities.treeview_city);
+  vbox_city->addWidget(_treeview_city);
   hbox_top->addWidget(frame_city);
 
-  QGroupBox* frame_drug =
-      new QGroupBox("Drug List", window_world_cities.window);
+  QGroupBox* frame_drug = new QGroupBox("Drug List", this);
   QVBoxLayout* vbox_drug = new QVBoxLayout(frame_drug);
   vbox_drug->setContentsMargins(5, 5, 5, 5);
-  window_world_cities.treeview_drug = create_treeview_drug_list();
-  window_world_cities.treeview_drug->setFixedHeight(210);
-  vbox_drug->addWidget(window_world_cities.treeview_drug);
+  _treeview_drug = create_treeview_drug_list();
+  _treeview_drug->setFixedHeight(210);
+  vbox_drug->addWidget(_treeview_drug);
   hbox_top->addWidget(frame_drug);
 
   vbox_main->addLayout(hbox_top);
@@ -1028,96 +1288,98 @@ void create_window_world_cities() {
   hbox_bottom->setSpacing(3);
   hbox_bottom->addStretch();
 
-  window_world_cities.button_close =
-      new QPushButton("&Close", window_world_cities.window);
-  QObject::connect(window_world_cities.button_close, &QPushButton::clicked,
-                   window_world_cities.window, &QDialog::close);
-  hbox_bottom->addWidget(window_world_cities.button_close);
+  _button_close = new QPushButton("&Close", this);
+  connect(_button_close, &QPushButton::clicked, this, &QDialog::close);
+  hbox_bottom->addWidget(_button_close);
 
   vbox_main->addLayout(hbox_bottom);
 
-  window_world_cities.window->layout()->setSizeConstraint(
-      QLayout::SetFixedSize);
+  connect(_treeview_city, &QTreeWidget::itemClicked, this,
+          &WindowWorldCities::onCityItemClicked);
+
+  fillDrugList(_gameState.location);
+  layout()->setSizeConstraint(QLayout::SetFixedSize);
 }
 
-void create_window_input(const char* title, const char* message,
-                         const char* question) {
-  if (window_input.window) {
-    delete window_input.window;
-  }
-  window_input.window = new QDialog(window_main.window);
-  window_input.window->setWindowTitle(QString::fromUtf8(title));
-  window_input.window->setModal(true);
+// WindowInput Implementation
 
-  QVBoxLayout* vbox_main = new QVBoxLayout(window_input.window);
+WindowInput::WindowInput(QWidget* parent) : QDialog(parent) {
+  _setupWidget("", "", "");
+}
+
+WindowInput::WindowInput(const QString& title, const QString& message,
+                         const QString& question, QWidget* parent)
+    : QDialog(parent) {
+  _setupWidget(title, message, question);
+}
+
+void WindowInput::setMessage(const QString& message) {
+  if (_label_msg) _label_msg->setText(message);
+}
+
+void WindowInput::setQuestion(const QString& question) {
+  if (_label_question) _label_question->setText(question);
+}
+
+void WindowInput::setRange(int min, int max) {
+  if (_spinbutton_value) _spinbutton_value->setRange(min, max);
+}
+
+void WindowInput::setValue(int val) {
+  if (_spinbutton_value) _spinbutton_value->setValue(val);
+}
+
+int WindowInput::value() const {
+  return _spinbutton_value ? _spinbutton_value->value() : 0;
+}
+
+void WindowInput::_setupWidget(const QString& title, const QString& message,
+                               const QString& question) {
+  setWindowTitle(title);
+  setModal(true);
+
+  QVBoxLayout* vbox_main = new QVBoxLayout(this);
   vbox_main->setContentsMargins(5, 5, 5, 5);
   vbox_main->setSpacing(5);
 
-  QGroupBox* frame_msg = new QGroupBox("Message", window_input.window);
+  QGroupBox* frame_msg = new QGroupBox("Message", this);
   QHBoxLayout* hbox_msg = new QHBoxLayout(frame_msg);
   hbox_msg->setContentsMargins(5, 5, 5, 5);
-  QLabel* label_msg = new QLabel(QString::fromUtf8(message), frame_msg);
-  hbox_msg->addWidget(label_msg);
+  _label_msg = new QLabel(message, frame_msg);
+  hbox_msg->addWidget(_label_msg);
   vbox_main->addWidget(frame_msg);
 
-  QGroupBox* frame_input = new QGroupBox("", window_input.window);
+  QGroupBox* frame_input = new QGroupBox("", this);
   QHBoxLayout* hbox_input = new QHBoxLayout(frame_input);
   hbox_input->setContentsMargins(5, 5, 5, 5);
   hbox_input->setSpacing(5);
 
-  QLabel* label_question = new QLabel(QString::fromUtf8(question), frame_input);
-  label_question->setAlignment(Qt::AlignRight | Qt::AlignVCenter);
-  label_question->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
-  hbox_input->addWidget(label_question);
+  _label_question = new QLabel(question, frame_input);
+  _label_question->setAlignment(Qt::AlignRight | Qt::AlignVCenter);
+  _label_question->setSizePolicy(QSizePolicy::Expanding,
+                                 QSizePolicy::Preferred);
+  hbox_input->addWidget(_label_question);
 
-  window_input.spinbutton_value = new QSpinBox(frame_input);
-  window_input.spinbutton_value->setRange(1, 1000000);
-  window_input.spinbutton_value->setValue(1);
-  hbox_input->addWidget(window_input.spinbutton_value);
+  _spinbutton_value = new QSpinBox(frame_input);
+  _spinbutton_value->setRange(1, 1000000);
+  _spinbutton_value->setValue(1);
+  hbox_input->addWidget(_spinbutton_value);
   vbox_main->addWidget(frame_input);
 
   QHBoxLayout* hbox_buttons = new QHBoxLayout();
   hbox_buttons->setSpacing(5);
   hbox_buttons->addStretch();
 
-  window_input.button_ok = new QPushButton("&OK", window_input.window);
-  hbox_buttons->addWidget(window_input.button_ok);
+  _button_ok = new QPushButton("&OK", this);
+  hbox_buttons->addWidget(_button_ok);
 
-  QPushButton* button_cancel = new QPushButton("&Cancel", window_input.window);
-  QObject::connect(button_cancel, &QPushButton::clicked, window_input.window,
-                   &QDialog::close);
-  hbox_buttons->addWidget(button_cancel);
+  _button_cancel = new QPushButton("&Cancel", this);
+  connect(_button_cancel, &QPushButton::clicked, this, &QDialog::reject);
+  hbox_buttons->addWidget(_button_cancel);
 
   vbox_main->addLayout(hbox_buttons);
 
-  window_input.window->layout()->setSizeConstraint(QLayout::SetFixedSize);
-}
+  connect(_button_ok, &QPushButton::clicked, this, &QDialog::accept);
 
-QMenu* create_places_menu(QPushButton* button) {
-  QMenu* menu = new QMenu(button);
-  menu->addAction("Finances...",
-                  []() { menuitem_places_finances_activate_cb(); });
-  menu->addAction("Shopping...",
-                  []() { menuitem_places_shopping_activate_cb(); });
-  menu->addAction("Hospital...",
-                  []() { menuitem_places_hospital_activate_cb(); });
-  menu->addAction("Vault...", []() { menuitem_places_vault_activate_cb(); });
-  menu->addAction("Shipping...",
-                  []() { menuitem_places_shipping_activate_cb(); });
-  button->setMenu(menu);
-  return menu;
-}
-
-QMenu* create_info_menu(QPushButton* button) {
-  QMenu* menu = new QMenu(button);
-  menu->addAction("Vaults...", []() { menuitem_info_vaults_activate_cb(); });
-  menu->addAction("World Drug Prices...",
-                  []() { menuitem_info_world_drug_prices_activate_cb(); });
-  menu->addAction("World Cities...",
-                  []() { menuitem_info_world_cities_activate_cb(); });
-  menu->addAction("Shipment Status...",
-                  []() { menuitem_info_shipment_status_activate_cb(); });
-  menu->addAction("History...", []() { menuitem_info_history_activate_cb(); });
-  button->setMenu(menu);
-  return menu;
+  layout()->setSizeConstraint(QLayout::SetFixedSize);
 }
