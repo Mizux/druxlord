@@ -214,6 +214,12 @@ class WindowShopping : public QDialog {
  signals:
   void stateChanged();
 
+ private slots:
+  void onBuyClicked();
+  void onSellClicked();
+  void onStoreItemSelectionChanged();
+  void onInventoryItemSelectionChanged();
+
  private:
   void _setupWidget();
 
@@ -420,3 +426,49 @@ class WindowFlyAway : public QDialog {
 };
 
 using FlyAwayDialog = WindowFlyAway;
+
+class WindowCombat : public QDialog {
+  Q_OBJECT
+
+ public:
+  explicit WindowCombat(GameState& gameState, int enemy_idx, int enemy_count,
+                        QWidget* parent = nullptr);
+  virtual ~WindowCombat() = default;
+
+  WindowCombat(const WindowCombat&) = delete;
+  WindowCombat& operator=(const WindowCombat&) = delete;
+
+ signals:
+  void stateChanged();
+
+ private slots:
+  void onFightClicked();
+  void onFleeClicked();
+  void onBribeClicked();
+  void onSurrenderClicked();
+
+ private:
+  void _setupWidget();
+  void _updateStatus();
+  void _enemyAttack();
+
+  GameState& _gameState;
+  int _enemyIdx;
+  int _enemyCount;
+
+  QLabel* _labelHeader = nullptr;
+  QLabel* _labelEnemy = nullptr;
+  QLabel* _labelHealth = nullptr;
+  QLabel* _labelCash = nullptr;
+  QLabel* _labelWeapon = nullptr;
+  QLabel* _labelAmmo = nullptr;
+  QLabel* _labelArmor = nullptr;
+  QTextEdit* _textLog = nullptr;
+
+  QPushButton* _buttonFight = nullptr;
+  QPushButton* _buttonFlee = nullptr;
+  QPushButton* _buttonBribe = nullptr;
+  QPushButton* _buttonSurrender = nullptr;
+};
+
+using CombatDialog = WindowCombat;

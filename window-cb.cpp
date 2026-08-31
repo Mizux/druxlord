@@ -247,8 +247,24 @@ void menuitem_info_history_activate_cb(MainWindow& window) {
 
 void window_main_button_stayhere_clicked_cb(MainWindow& window) {
   auto& game_state = window.gameState();
+  Encounter enc = game_state.check_random_encounter();
   game_state.stay_here();
+  if (enc.type != EncounterType::None) {
+    if (enc.type == EncounterType::Combat) {
+      WindowCombat dlg(game_state, enc.enemy_idx, enc.enemy_count, &window);
+      dlg.exec();
+    } else {
+      QMessageBox::information(&window, "Random Encounter",
+                               QString::fromStdString(enc.message));
+    }
+  }
   window.updateAllUi();
+  if (game_state.health <= 0) {
+    QMessageBox::critical(&window, "Game Over", "YOU WERE KILLED!");
+    game_state.newgame();
+    window.updateAllUi();
+    return;
+  }
   if (game_state.day >= DAY_NUM - 1) {
     int score = game_state.cash + game_state.bank - game_state.debt;
     if (score < 0) score = 0;
@@ -265,7 +281,13 @@ void window_main_button_flyaway_clicked_cb(MainWindow& window) {
                    [&window]() { window.updateAllUi(); });
   if (dlg.exec() == QDialog::Accepted) {
     window.updateAllUi();
-    const auto& game_state = window.gameState();
+    auto& game_state = window.gameState();
+    if (game_state.health <= 0) {
+      QMessageBox::critical(&window, "Game Over", "YOU WERE KILLED!");
+      game_state.newgame();
+      window.updateAllUi();
+      return;
+    }
     if (game_state.day >= DAY_NUM - 1) {
       int score = game_state.cash + game_state.bank - game_state.debt;
       if (score < 0) score = 0;

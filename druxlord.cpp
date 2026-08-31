@@ -132,6 +132,42 @@ const std::array<Weapon, WEAPON_NUM> weapon_info = {
      {WeaponType::AreaDisrupter, AmmoType::EnergyGlobe, 99, true, true,
       500000}}};
 
+const std::array<ShopItem, SHOP_ITEM_NUM> shop_items = {{
+    {"knife", "knives", "", "", 35, 1, 0, 1, 0, 100, 0},
+    {"pistol", "pistols", "pistol bullet", "pistol bullets", 45, 1, 0, 1, 100,
+     500, 5},
+    {"shot gun", "shot guns", "shot gun shell", "shot gun shells", 55, 2, 0, 1,
+     100, 2500, 5},
+    {"machine gun", "machine guns", "machine gun bullet", "machine gun bullets",
+     85, 1, 0, 1, 250, 4000, 5},
+    {"flame thrower", "flame throwers", "gas canister", "gas canisters", 75, 8,
+     0, 1, 10, 7500, 200},
+    {"", "", "dynamite", "sticks of dynamite", 90, 10, 0, 0, 10, 0, 250},
+    {"", "", "hand grenade", "hand grenades", 95, 18, 0, 0, 10, 0, 500},
+    {"rocket launcher", "rocket launchers", "rocket", "rockets", 80, 35, 0, 1,
+     5, 10000, 500},
+    {"area disrupter", "area disrupters", "energy globe", "energy globes", 95,
+     120, 0, 1, 10, 500000, 25000},
+    {"heavy leather coat", "heavy leather coats", "", "", 0, 0, 3, 1, 0, 1000,
+     0},
+    {"bullet proof vest", "bullet proof vests", "", "", 0, 0, 15, 1, 0, 10000,
+     0},
+    {"can of no-scent", "cans of no-scent", "", "", 0, 0, 0, 10, 0, 1000, 0},
+}};
+
+const std::array<Enemy, ENEMY_NUM> enemy_info = {{
+    {"the drug force", 15, true, 2, 2, 20, 3, 25, 75, 50},
+    {"the police", 15, true, 5, 5, 10, 4, 20, 75, 25},
+    {"a youth gang", 15, false, 20, 25, 7, 3, 20, 20, 10},
+    {"some street toughs", 15, false, 20, 25, 7, 2, 40, 20, 20},
+    {"ATF", 3, true, 1, 5, 15, 3, 30, 75, 35},
+    {"a group of concerned citizens", 7, true, 10, 40, 5, 5, 10, 35, 5},
+    {"a group of wild dogs", 5, true, 0, 60, 5, 5, 15, 0, 0},
+    {"a pack of sewer rats", 3, true, 0, 80, 5, 10, 5, 0, 0},
+    {"the swat team", 2, true, 1, 2, 25, 4, 25, 75, 45},
+    {"airport security", 0, true, 1, 2, 25, 20, 25, 75, 35},
+}};
+
 const std::array<City, CITY_NUM> city_info = {
     {{CityType::Austin, CountryType::USA, 100, 1861},
      {CityType::Beijing, CountryType::China, 190, 5307},
@@ -188,6 +224,10 @@ void GameState::newgame() {
     player_price[i] = 0;
     vault_qty[i] = 0;
   }
+  for (int i = 0; i < SHOP_ITEM_NUM; ++i) {
+    weapon_qty[i] = 0;
+    ammo_qty[i] = 0;
+  }
   for (int i = 0; i < DRUG_NUM; ++i) {
     for (int j = 0; j < CITY_NUM; ++j) {
       for (int d = 0; d < DAY_NUM; ++d) {
@@ -197,6 +237,229 @@ void GameState::newgame() {
   }
   rumors_heard.clear();
   generate_drug();
+}
+
+Encounter GameState::check_random_encounter() {
+  static std::random_device rd;
+  static std::mt19937 gen(rd());
+
+  // Day of peace on day 0
+  if (day < 1) return {EncounterType::None};
+
+  // 50% chance of random encounter
+  if (gen() % 2 != 0) return {EncounterType::None};
+
+  // 15 events weighted according to the original binary
+  static const int event_weights[] = {5, 2, 1, 5, 3,  3,  1, 3,
+                                      3, 1, 5, 1, 10, 10, 10};
+  int total_weight = 63;
+  int roll = static_cast<int>(gen() % total_weight);
+  int ev = 0;
+  int accum = 0;
+  for (int i = 0; i < 15; ++i) {
+    accum += event_weights[i];
+    if (roll < accum) {
+      ev = i;
+      break;
+    }
+  }
+
+  // Combat encounters: Events 12, 13, 14
+  if (ev >= 12) {
+    int total_enemy_weight = 0;
+    for (int i = 0; i < ENEMY_NUM - 1; ++i) {
+      total_enemy_weight += enemy_info[i].weight;
+    }
+    int eroll = static_cast<int>(gen() % total_enemy_weight);
+    int e_idx = 0;
+    accum = 0;
+    for (int i = 0; i < ENEMY_NUM - 1; ++i) {
+      accum += enemy_info[i].weight;
+      if (eroll < accum) {
+        e_idx = i;
+        break;
+      }
+    }
+    int scale = enemy_info[e_idx].scale;
+    int max_add = std::max(1, scale * (rank + 1));
+    int count = enemy_info[e_idx].min_count + static_cast<int>(gen() % max_add);
+
+    std::string msg;
+    if (ev == 12) {
+      msg = "Some days just aren't worth it...";
+    } else if (ev == 13) {
+      msg = "Did you hear that?";
+    } else {
+      msg =
+          "In the distance you catch sight of something. You try to run, but "
+          "it's of no use.";
+    }
+    return {EncounterType::Combat, msg, e_idx, count};
+  }
+
+  if (ev == 0) {
+    int d = static_cast<int>(gen() % DRUG_NUM);
+    int q = 1 + static_cast<int>(gen() % 5);
+    q = std::min(q, pocket_capacity - pocket);
+    if (q > 0) {
+      player_qty[d] += q;
+      pocket += q;
+      return {EncounterType::FriendDrug,
+              std::format("A friend stops by and gives you {} units of {}!", q,
+                          drug_name(drug_info[d].id))};
+    }
+    return {EncounterType::FriendDrug,
+            "A friend stops by to give you some drugs, but your pockets are "
+            "completely full!"};
+  }
+
+  if (ev == 1) {
+    std::vector<int> owned;
+    for (int i = 0; i < DRUG_NUM; ++i) {
+      if (player_qty[i] > 0) owned.push_back(i);
+    }
+    if (owned.empty()) return {EncounterType::None};
+    int d = owned[gen() % owned.size()];
+    int q = std::min(player_qty[d], 1 + static_cast<int>(gen() % 3));
+    player_qty[d] -= q;
+    pocket -= q;
+    return {EncounterType::BrushMissing,
+            std::format("You feel someone brush against you and discover that "
+                        "{} units of {} are missing!",
+                        q, drug_name(drug_info[d].id))};
+  }
+
+  if (ev == 2) {
+    std::vector<int> owned;
+    for (int i = 0; i < DRUG_NUM; ++i) {
+      if (player_qty[i] > 0) owned.push_back(i);
+    }
+    if (owned.empty()) return {EncounterType::None};
+    int d = owned[gen() % owned.size()];
+    int q = std::min(player_qty[d], 1 + static_cast<int>(gen() % 2));
+    player_qty[d] -= q;
+    pocket -= q;
+    return {
+        EncounterType::FakeDrug,
+        std::format("Close inspection reveals that {} units of {} are fake!", q,
+                    drug_name(drug_info[d].id))};
+  }
+
+  if (ev == 3) {
+    int d = static_cast<int>(gen() % DRUG_NUM);
+    int q = 1 + static_cast<int>(gen() % 5);
+    q = std::min(q, pocket_capacity - pocket);
+    if (q > 0) {
+      player_qty[d] += q;
+      pocket += q;
+      return {
+          EncounterType::DeadBodyDrug,
+          std::format("You stumble across a dead body and find {} units of {}!",
+                      q, drug_name(drug_info[d].id))};
+    }
+    return {EncounterType::DeadBodyDrug,
+            "You stumble across a dead body with drugs, but your pockets are "
+            "completely full!"};
+  }
+
+  if (ev == 4) {
+    int amount =
+        (1 + static_cast<int>(gen() % 5)) * 100 + static_cast<int>(gen() % 100);
+    cash += amount;
+    return {
+        EncounterType::PurseCash,
+        std::format("You find a woman's purse in a trash can. Inside is ${}!",
+                    money_string(amount))};
+  }
+
+  if (ev == 5) {
+    int amount =
+        (1 + static_cast<int>(gen() % 5)) * 100 + static_cast<int>(gen() % 100);
+    cash += amount;
+    return {
+        EncounterType::WalletCash,
+        std::format("You find a wallet with ${} in it!", money_string(amount))};
+  }
+
+  if (ev == 6) {
+    if (cash <= 100) return {EncounterType::None};
+    int fee = std::min(cash, static_cast<int>((1 + (gen() % 4)) * 100));
+    cash -= fee;
+    return {EncounterType::RatFee,
+            std::format("Your home is infested with rats! You have to pay an "
+                        "exterminator ${} to get rid of them!",
+                        money_string(fee))};
+  }
+
+  if (ev == 7) {
+    if (cash <= 100) return {EncounterType::None};
+    int stolen = std::min(cash, static_cast<int>((1 + (gen() % 5)) * 100));
+    cash -= stolen;
+    return {EncounterType::Mugged,
+            std::format("You have been mugged! He takes ${} and runs!",
+                        money_string(stolen))};
+  }
+
+  if (ev == 8) {
+    if (cash <= 100) return {EncounterType::None};
+    int lifted = std::min(cash, static_cast<int>((1 + (gen() % 4)) * 100));
+    cash -= lifted;
+    return {EncounterType::SubwayFee,
+            std::format(
+                "You get off the subway and find ${} has been lifted from you!",
+                money_string(lifted))};
+  }
+
+  if (ev == 9) {
+    std::vector<int> owned;
+    for (int i = 0; i < DRUG_NUM; ++i) {
+      if (player_qty[i] > 0) owned.push_back(i);
+    }
+    if (owned.empty()) return {EncounterType::None};
+    int d = owned[gen() % owned.size()];
+    int q = player_qty[d];
+    player_qty[d] = 0;
+    pocket -= q;
+    return {
+        EncounterType::AddictDemand,
+        std::format("A {} addict jumps you and demands all your {}! You "
+                    "have no choice but to hand it over.",
+                    drug_name(drug_info[d].id), drug_name(drug_info[d].id))};
+  }
+
+  if (ev == 10) {
+    int idx = static_cast<int>(gen() % 7);
+    if (idx == 5 || idx == 6) {
+      ammo_qty[idx] = std::min(shop_items[idx].ammo_limit, ammo_qty[idx] + 2);
+      return {EncounterType::BodyWeapon,
+              std::format("You trip over a body. You search it and find 2 {}!",
+                          shop_items[idx].ammo_plural)};
+    } else {
+      weapon_qty[idx] = 1;
+      if (shop_items[idx].ammo_limit > 0) {
+        ammo_qty[idx] =
+            std::min(shop_items[idx].ammo_limit, ammo_qty[idx] + 15);
+      }
+      return {EncounterType::BodyWeapon,
+              std::format("You trip over a body. You search it and find a {}!",
+                          shop_items[idx].name)};
+    }
+  }
+
+  if (ev == 11) {
+    std::vector<int> owned;
+    for (int i = 0; i < 8; ++i) {
+      if (weapon_qty[i] > 0) owned.push_back(i);
+    }
+    if (owned.empty()) return {EncounterType::None};
+    int w = owned[gen() % owned.size()];
+    weapon_qty[w] = 0;
+    return {EncounterType::WeaponBreak,
+            std::format("OH MAN! You are cleaning your {} and it falls apart!",
+                        shop_items[w].name)};
+  }
+
+  return {EncounterType::None};
 }
 
 void GameState::generate_drug() {

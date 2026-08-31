@@ -116,6 +116,61 @@ struct Weapon {
   int price;
 };
 
+struct ShopItem {
+  std::string name;
+  std::string plural;
+  std::string ammo_name;
+  std::string ammo_plural;
+  int hit_chance;
+  int damage;
+  int armor;
+  int weapon_limit;
+  int ammo_limit;
+  int weapon_price;
+  int ammo_price;
+};
+
+inline constexpr int SHOP_ITEM_NUM = 12;
+
+struct Enemy {
+  std::string name;
+  int weight;
+  bool can_bribe;
+  int flee_chance;
+  int min_count;
+  int scale;
+  int weapon_idx;
+  int health;
+  int surrender_accept;
+  int accuracy;
+};
+
+inline constexpr int ENEMY_NUM = 10;
+
+enum class EncounterType {
+  None,
+  FriendDrug,
+  BrushMissing,
+  FakeDrug,
+  DeadBodyDrug,
+  PurseCash,
+  WalletCash,
+  RatFee,
+  Mugged,
+  SubwayFee,
+  AddictDemand,
+  BodyWeapon,
+  WeaponBreak,
+  Combat
+};
+
+struct Encounter {
+  EncounterType type = EncounterType::None;
+  std::string message;
+  int enemy_idx = -1;
+  int enemy_count = 0;
+};
+
 struct Rank {
   RankType type;
   unsigned long cash;
@@ -133,6 +188,8 @@ int flight_cost(int from_city, int to_city);
 
 extern const std::array<Drug, DRUG_NUM> drug_info;
 extern const std::array<Weapon, WEAPON_NUM> weapon_info;
+extern const std::array<ShopItem, SHOP_ITEM_NUM> shop_items;
+extern const std::array<Enemy, ENEMY_NUM> enemy_info;
 extern const std::array<City, CITY_NUM> city_info;
 
 class GameState {
@@ -147,11 +204,33 @@ class GameState {
   std::string get_market_news(int loc, int d) const;
   int flight_cost(int to_city) const;
 
+  Encounter check_random_encounter();
+
+  int total_armor() const {
+    int arm = 0;
+    if (weapon_qty[9] > 0) arm += shop_items[9].armor;  // Heavy leather coat: 3
+    if (weapon_qty[10] > 0)
+      arm += shop_items[10].armor;  // Bullet proof vest: 15
+    return arm;
+  }
+
+  int no_scent_cans() const { return weapon_qty[11]; }
+
+  int total_drugs() const {
+    int total = 0;
+    for (int i = 0; i < DRUG_NUM; ++i) total += player_qty[i];
+    return total;
+  }
+
   std::vector<std::string> rumors_heard;
 
   // Player pocket inventory
   int player_qty[DRUG_NUM]{};
   int player_price[DRUG_NUM]{};  // average cost basis
+
+  // Player weapons, armor, items, and ammo
+  int weapon_qty[SHOP_ITEM_NUM]{};
+  int ammo_qty[SHOP_ITEM_NUM]{};
 
   // Vault inventory
   int vault_qty[DRUG_NUM]{};

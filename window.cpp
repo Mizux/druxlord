@@ -8,9 +8,11 @@
 #include <QGridLayout>
 #include <QGroupBox>
 #include <QHeaderView>
+#include <QInputDialog>
 #include <QKeySequence>
 #include <QLabel>
 #include <QMenu>
+#include <QMessageBox>
 #include <QProgressBar>
 #include <QPushButton>
 #include <QShortcut>
@@ -22,6 +24,7 @@
 #include <QWidget>
 #include <array>
 #include <format>
+#include <random>
 #include <string>
 
 #include "config.h"
@@ -773,14 +776,196 @@ void WindowShopping::updateShopping() {
   }
   if (_treeview_store) {
     _treeview_store->clear();
-    for (int i = 0; i < WEAPON_NUM; ++i) {
-      QTreeWidgetItem* item = new QTreeWidgetItem(_treeview_store);
-      item->setText(COLUMN_STORE_NAME, QString::number(i + 1));
-      item->setText(COLUMN_STORE_TYPE, "Weapon");
-      item->setText(COLUMN_STORE_PRICE,
-                    QString::fromStdString(money_string(weapon_info[i].price)));
+    for (int i = 0; i < SHOP_ITEM_NUM; ++i) {
+      if (!shop_items[i].name.empty()) {
+        QTreeWidgetItem* item = new QTreeWidgetItem(_treeview_store);
+        item->setText(COLUMN_STORE_NAME,
+                      QString::fromStdString(shop_items[i].name));
+        QString type_str =
+            shop_items[i].armor > 0
+                ? "Armor"
+                : (shop_items[i].hit_chance > 0 ? "Weapon" : "Item");
+        item->setText(COLUMN_STORE_TYPE, type_str);
+        item->setText(
+            COLUMN_STORE_PRICE,
+            QString::fromStdString(money_string(shop_items[i].weapon_price)));
+        item->setData(0, Qt::UserRole, i);
+        item->setData(0, Qt::UserRole + 1, false);
+      }
+      if (!shop_items[i].ammo_name.empty()) {
+        QTreeWidgetItem* item = new QTreeWidgetItem(_treeview_store);
+        item->setText(COLUMN_STORE_NAME,
+                      QString::fromStdString(shop_items[i].ammo_name));
+        item->setText(COLUMN_STORE_TYPE, "Ammo");
+        item->setText(
+            COLUMN_STORE_PRICE,
+            QString::fromStdString(money_string(shop_items[i].ammo_price)));
+        item->setData(0, Qt::UserRole, i);
+        item->setData(0, Qt::UserRole + 1, true);
+      }
     }
   }
+  if (_treeview_inventory) {
+    _treeview_inventory->clear();
+    for (int i = 0; i < SHOP_ITEM_NUM; ++i) {
+      if (_gameState.weapon_qty[i] > 0) {
+        QTreeWidgetItem* item = new QTreeWidgetItem(_treeview_inventory);
+        item->setText(COLUMN_INVENTORY_NAME,
+                      QString::fromStdString(shop_items[i].name));
+        QString type_str =
+            shop_items[i].armor > 0
+                ? "Armor"
+                : (shop_items[i].hit_chance > 0 ? "Weapon" : "Item");
+        item->setText(COLUMN_INVENTORY_TYPE, type_str);
+        item->setText(COLUMN_INVENTORY_QTY,
+                      QString::number(_gameState.weapon_qty[i]));
+        item->setText(
+            COLUMN_INVENTORY_SELLFOR,
+            QString::fromStdString(money_string(shop_items[i].weapon_price)));
+        item->setData(0, Qt::UserRole, i);
+        item->setData(0, Qt::UserRole + 1, false);
+      }
+      if (_gameState.ammo_qty[i] > 0) {
+        QTreeWidgetItem* item = new QTreeWidgetItem(_treeview_inventory);
+        item->setText(COLUMN_INVENTORY_NAME,
+                      QString::fromStdString(shop_items[i].ammo_name));
+        item->setText(COLUMN_INVENTORY_TYPE, "Ammo");
+        item->setText(COLUMN_INVENTORY_QTY,
+                      QString::number(_gameState.ammo_qty[i]));
+        item->setText(
+            COLUMN_INVENTORY_SELLFOR,
+            QString::fromStdString(money_string(shop_items[i].ammo_price)));
+        item->setData(0, Qt::UserRole, i);
+        item->setData(0, Qt::UserRole + 1, true);
+      }
+    }
+  }
+  onStoreItemSelectionChanged();
+  onInventoryItemSelectionChanged();
+}
+
+void WindowShopping::onStoreItemSelectionChanged() {
+  QList<QTreeWidgetItem*> sel = _treeview_store->selectedItems();
+  if (sel.isEmpty()) {
+    _button_buy->setEnabled(false);
+    return;
+  }
+  int idx = sel.first()->data(0, Qt::UserRole).toInt();
+  bool is_ammo = sel.first()->data(0, Qt::UserRole + 1).toBool();
+  if (is_ammo) {
+    int price = shop_items[idx].ammo_price;
+    int cur_ammo = _gameState.ammo_qty[idx];
+    int max_ammo = shop_items[idx].ammo_limit;
+    _button_buy->setEnabled(_gameState.cash >= price && cur_ammo < max_ammo);
+  } else {
+    int price = shop_items[idx].weapon_price;
+    int cur_qty = _gameState.weapon_qty[idx];
+    int max_qty = shop_items[idx].weapon_limit;
+    _button_buy->setEnabled(_gameState.cash >= price && cur_qty < max_qty);
+  }
+}
+
+void WindowShopping::onInventoryItemSelectionChanged() {
+  QList<QTreeWidgetItem*> sel = _treeview_inventory->selectedItems();
+  _button_sell->setEnabled(!sel.isEmpty());
+}
+
+void WindowShopping::onBuyClicked() {
+  QList<QTreeWidgetItem*> sel = _treeview_store->selectedItems();
+  if (sel.isEmpty()) return;
+  int idx = sel.first()->data(0, Qt::UserRole).toInt();
+  bool is_ammo = sel.first()->data(0, Qt::UserRole + 1).toBool();
+
+  if (is_ammo) {
+    int price = shop_items[idx].ammo_price;
+    int cur_ammo = _gameState.ammo_qty[idx];
+    int max_ammo = shop_items[idx].ammo_limit;
+    int max_buy = std::min(max_ammo - cur_ammo, _gameState.cash / price);
+    if (max_buy <= 0) {
+      QMessageBox::information(this, "Shopping",
+                               "You cannot buy any more of that!");
+      return;
+    }
+    int qty = 1;
+    if (max_buy > 1) {
+      bool ok = false;
+      qty = QInputDialog::getInt(
+          this, "Buy Ammo",
+          QString("How many %1 do you want to buy?")
+              .arg(QString::fromStdString(shop_items[idx].ammo_plural)),
+          1, 1, max_buy, 1, &ok);
+      if (!ok || qty <= 0) return;
+    }
+    _gameState.cash -= qty * price;
+    _gameState.ammo_qty[idx] += qty;
+  } else {
+    int price = shop_items[idx].weapon_price;
+    int cur_qty = _gameState.weapon_qty[idx];
+    int max_qty = shop_items[idx].weapon_limit;
+    int max_buy = std::min(max_qty - cur_qty, _gameState.cash / price);
+    if (max_buy <= 0) {
+      QMessageBox::information(this, "Shopping",
+                               "You cannot buy any more of that!");
+      return;
+    }
+    int qty = 1;
+    if (max_buy > 1) {
+      bool ok = false;
+      qty = QInputDialog::getInt(
+          this, "Buy Item",
+          QString("How many %1 do you want to buy?")
+              .arg(QString::fromStdString(shop_items[idx].plural)),
+          1, 1, max_buy, 1, &ok);
+      if (!ok || qty <= 0) return;
+    }
+    _gameState.cash -= qty * price;
+    _gameState.weapon_qty[idx] += qty;
+  }
+  updateShopping();
+  emit stateChanged();
+}
+
+void WindowShopping::onSellClicked() {
+  QList<QTreeWidgetItem*> sel = _treeview_inventory->selectedItems();
+  if (sel.isEmpty()) return;
+  int idx = sel.first()->data(0, Qt::UserRole).toInt();
+  bool is_ammo = sel.first()->data(0, Qt::UserRole + 1).toBool();
+
+  if (is_ammo) {
+    int price = shop_items[idx].ammo_price;
+    int owned = _gameState.ammo_qty[idx];
+    if (owned <= 0) return;
+    int qty = 1;
+    if (owned > 1) {
+      bool ok = false;
+      qty = QInputDialog::getInt(
+          this, "Sell Ammo",
+          QString("How many %1 do you want to sell?")
+              .arg(QString::fromStdString(shop_items[idx].ammo_plural)),
+          1, 1, owned, 1, &ok);
+      if (!ok || qty <= 0) return;
+    }
+    _gameState.cash += qty * price;
+    _gameState.ammo_qty[idx] -= qty;
+  } else {
+    int price = shop_items[idx].weapon_price;
+    int owned = _gameState.weapon_qty[idx];
+    if (owned <= 0) return;
+    int qty = 1;
+    if (owned > 1) {
+      bool ok = false;
+      qty = QInputDialog::getInt(
+          this, "Sell Item",
+          QString("How many %1 do you want to sell?")
+              .arg(QString::fromStdString(shop_items[idx].plural)),
+          1, 1, owned, 1, &ok);
+      if (!ok || qty <= 0) return;
+    }
+    _gameState.cash += qty * price;
+    _gameState.weapon_qty[idx] -= qty;
+  }
+  updateShopping();
+  emit stateChanged();
 }
 
 void WindowShopping::_setupWidget() {
@@ -800,13 +985,13 @@ void WindowShopping::_setupWidget() {
   _treeview_store->setRootIsDecorated(false);
   _treeview_store->setColumnCount(3);
   _treeview_store->setHeaderLabels({"Name", "Type", "Price"});
-  _treeview_store->setColumnWidth(COLUMN_STORE_NAME, 140);
-  _treeview_store->setColumnWidth(COLUMN_STORE_TYPE, 100);
+  _treeview_store->setColumnWidth(COLUMN_STORE_NAME, 160);
+  _treeview_store->setColumnWidth(COLUMN_STORE_TYPE, 80);
   _treeview_store->setColumnWidth(COLUMN_STORE_PRICE, 70);
   _treeview_store->headerItem()->setTextAlignment(
-      COLUMN_STORE_NAME, Qt::AlignRight | Qt::AlignVCenter);
+      COLUMN_STORE_NAME, Qt::AlignLeft | Qt::AlignVCenter);
   _treeview_store->headerItem()->setTextAlignment(
-      COLUMN_STORE_TYPE, Qt::AlignRight | Qt::AlignVCenter);
+      COLUMN_STORE_TYPE, Qt::AlignCenter | Qt::AlignVCenter);
   _treeview_store->headerItem()->setTextAlignment(
       COLUMN_STORE_PRICE, Qt::AlignRight | Qt::AlignVCenter);
   _treeview_store->setFixedHeight(220);
@@ -815,6 +1000,7 @@ void WindowShopping::_setupWidget() {
   QHBoxLayout* hbox_buy = new QHBoxLayout();
   hbox_buy->addStretch();
   _button_buy = new QPushButton("   Buy   ", frame_store);
+  _button_buy->setEnabled(false);
   hbox_buy->addWidget(_button_buy);
   vbox_store->addLayout(hbox_buy);
 
@@ -829,14 +1015,18 @@ void WindowShopping::_setupWidget() {
   _treeview_inventory->setRootIsDecorated(false);
   _treeview_inventory->setColumnCount(4);
   _treeview_inventory->setHeaderLabels({"Name", "Type", "Qty", "Price"});
-  _treeview_inventory->setColumnWidth(COLUMN_INVENTORY_NAME, 140);
-  _treeview_inventory->setColumnWidth(COLUMN_INVENTORY_TYPE, 100);
-  _treeview_inventory->setColumnWidth(COLUMN_INVENTORY_QTY, 70);
+  _treeview_inventory->setColumnWidth(COLUMN_INVENTORY_NAME, 160);
+  _treeview_inventory->setColumnWidth(COLUMN_INVENTORY_TYPE, 80);
+  _treeview_inventory->setColumnWidth(COLUMN_INVENTORY_QTY, 50);
   _treeview_inventory->setColumnWidth(COLUMN_INVENTORY_SELLFOR, 70);
-  for (int col = 0; col < 4; ++col) {
-    _treeview_inventory->headerItem()->setTextAlignment(
-        col, Qt::AlignRight | Qt::AlignVCenter);
-  }
+  _treeview_inventory->headerItem()->setTextAlignment(
+      COLUMN_INVENTORY_NAME, Qt::AlignLeft | Qt::AlignVCenter);
+  _treeview_inventory->headerItem()->setTextAlignment(
+      COLUMN_INVENTORY_TYPE, Qt::AlignCenter | Qt::AlignVCenter);
+  _treeview_inventory->headerItem()->setTextAlignment(
+      COLUMN_INVENTORY_QTY, Qt::AlignRight | Qt::AlignVCenter);
+  _treeview_inventory->headerItem()->setTextAlignment(
+      COLUMN_INVENTORY_SELLFOR, Qt::AlignRight | Qt::AlignVCenter);
   _treeview_inventory->setFixedHeight(150);
   vbox_inv->addWidget(_treeview_inventory);
 
@@ -853,6 +1043,7 @@ void WindowShopping::_setupWidget() {
   hbox_sell_cash->addStretch();
 
   _button_sell = new QPushButton("   Sell   ", frame_inv);
+  _button_sell->setEnabled(false);
   hbox_sell_cash->addWidget(_button_sell);
   vbox_inv->addLayout(hbox_sell_cash);
 
@@ -865,6 +1056,15 @@ void WindowShopping::_setupWidget() {
   connect(_button_done, &QPushButton::clicked, this, &QDialog::close);
   hbox_done->addWidget(_button_done);
   vbox_main->addLayout(hbox_done);
+
+  connect(_treeview_store, &QTreeWidget::itemSelectionChanged, this,
+          &WindowShopping::onStoreItemSelectionChanged);
+  connect(_treeview_inventory, &QTreeWidget::itemSelectionChanged, this,
+          &WindowShopping::onInventoryItemSelectionChanged);
+  connect(_button_buy, &QPushButton::clicked, this,
+          &WindowShopping::onBuyClicked);
+  connect(_button_sell, &QPushButton::clicked, this,
+          &WindowShopping::onSellClicked);
 
   updateShopping();
   layout()->setSizeConstraint(QLayout::SetFixedSize);
@@ -1501,9 +1701,421 @@ void WindowFlyAway::onFlyClicked() {
     if (_gameState.cash >= cost) {
       _gameState.cash -= cost;
       _gameState.location = dest;
+
+      // Drug-sniffing dogs check at airport
+      static std::random_device rd;
+      static std::mt19937 gen(rd());
+      if (_gameState.total_drugs() > 0 && (gen() % 3 == 0)) {
+        int needed = std::max(1, _gameState.total_drugs() / 10);
+        if (_gameState.no_scent_cans() >= needed) {
+          auto ans = QMessageBox::question(
+              this, "The drug sniffing dogs smell something!",
+              QString("To make your drugs undetectable to the drug-sniffing "
+                      "dogs, you will need to use %1 %2 of No-Scent. You have "
+                      "%3 %4.\nDo you wish to use them?")
+                  .arg(needed)
+                  .arg(needed == 1 ? "can" : "cans")
+                  .arg(_gameState.no_scent_cans())
+                  .arg(_gameState.no_scent_cans() == 1 ? "can" : "cans"),
+              QMessageBox::Yes | QMessageBox::No);
+          if (ans == QMessageBox::Yes) {
+            _gameState.weapon_qty[11] -= needed;
+          } else {
+            QMessageBox::warning(this, "Airport Security",
+                                 "The drug sniffing dogs detected your drugs! "
+                                 "Airport security is moving in!");
+            WindowCombat dlg(_gameState, 9, 2 + (_gameState.rank + 1) * 2,
+                             this);
+            dlg.exec();
+          }
+        } else {
+          QMessageBox::warning(
+              this, "The drug sniffing dogs smell something!",
+              QString("To make your drugs undetectable to the drug-sniffing "
+                      "dogs, you will need to use %1 %2 of No-Scent. You have "
+                      "%3 %4.\nAirport security is moving in!")
+                  .arg(needed)
+                  .arg(needed == 1 ? "can" : "cans")
+                  .arg(_gameState.no_scent_cans())
+                  .arg(_gameState.no_scent_cans() == 1 ? "can" : "cans"));
+          WindowCombat dlg(_gameState, 9, 2 + (_gameState.rank + 1) * 2, this);
+          dlg.exec();
+        }
+      }
+
       _gameState.stay_here();
       emit stateChanged();
       accept();
     }
   }
+}
+
+// WindowCombat Implementation
+
+WindowCombat::WindowCombat(GameState& gameState, int enemy_idx, int enemy_count,
+                           QWidget* parent)
+    : QDialog(parent),
+      _gameState(gameState),
+      _enemyIdx(enemy_idx),
+      _enemyCount(enemy_count) {
+  _setupWidget();
+  _updateStatus();
+}
+
+void WindowCombat::_setupWidget() {
+  setWindowTitle(QString("Fighting %1")
+                     .arg(QString::fromStdString(enemy_info[_enemyIdx].name)));
+  setModal(true);
+  setFixedSize(500, 400);
+
+  QVBoxLayout* main_layout = new QVBoxLayout(this);
+  main_layout->setSpacing(8);
+
+  _labelHeader = new QLabel(
+      QString("You have encountered %1! There %2 of them!")
+          .arg(QString::fromStdString(enemy_info[_enemyIdx].name))
+          .arg(_enemyCount == 1 ? "is only one"
+                                : QString("are %1").arg(_enemyCount)),
+      this);
+  QFont font = _labelHeader->font();
+  font.setBold(true);
+  font.setPointSize(font.pointSize() + 1);
+  _labelHeader->setFont(font);
+  main_layout->addWidget(_labelHeader);
+
+  // Status group
+  QGroupBox* status_group = new QGroupBox("Status", this);
+  QGridLayout* grid = new QGridLayout(status_group);
+  grid->setContentsMargins(5, 5, 5, 5);
+
+  grid->addWidget(new QLabel("Enemy:", status_group), 0, 0);
+  _labelEnemy = new QLabel(status_group);
+  grid->addWidget(_labelEnemy, 0, 1);
+
+  grid->addWidget(new QLabel("Health:", status_group), 0, 2);
+  _labelHealth = new QLabel(status_group);
+  grid->addWidget(_labelHealth, 0, 3);
+
+  grid->addWidget(new QLabel("Cash:", status_group), 1, 0);
+  _labelCash = new QLabel(status_group);
+  grid->addWidget(_labelCash, 1, 1);
+
+  grid->addWidget(new QLabel("Weapon:", status_group), 1, 2);
+  _labelWeapon = new QLabel(status_group);
+  grid->addWidget(_labelWeapon, 1, 3);
+
+  grid->addWidget(new QLabel("Ammo:", status_group), 2, 0);
+  _labelAmmo = new QLabel(status_group);
+  grid->addWidget(_labelAmmo, 2, 1);
+
+  grid->addWidget(new QLabel("Armor:", status_group), 2, 2);
+  _labelArmor = new QLabel(status_group);
+  grid->addWidget(_labelArmor, 2, 3);
+
+  main_layout->addWidget(status_group);
+
+  _textLog = new QTextEdit(this);
+  _textLog->setReadOnly(true);
+  _textLog->setFixedHeight(150);
+  main_layout->addWidget(_textLog);
+
+  QHBoxLayout* button_layout = new QHBoxLayout();
+  _buttonFight = new QPushButton("Fight", this);
+  _buttonFlee = new QPushButton("Flee", this);
+  _buttonBribe = new QPushButton("Bribe", this);
+  _buttonSurrender = new QPushButton("Surrender", this);
+
+  connect(_buttonFight, &QPushButton::clicked, this,
+          &WindowCombat::onFightClicked);
+  connect(_buttonFlee, &QPushButton::clicked, this,
+          &WindowCombat::onFleeClicked);
+  connect(_buttonBribe, &QPushButton::clicked, this,
+          &WindowCombat::onBribeClicked);
+  connect(_buttonSurrender, &QPushButton::clicked, this,
+          &WindowCombat::onSurrenderClicked);
+
+  button_layout->addWidget(_buttonFight);
+  button_layout->addWidget(_buttonFlee);
+  button_layout->addWidget(_buttonBribe);
+  button_layout->addWidget(_buttonSurrender);
+  main_layout->addLayout(button_layout);
+
+  _textLog->append(
+      QString("You face %1 %2! Choose your action.")
+          .arg(_enemyCount)
+          .arg(QString::fromStdString(enemy_info[_enemyIdx].name)));
+}
+
+void WindowCombat::_updateStatus() {
+  _labelEnemy->setText(
+      QString("%1 (%2 remain)")
+          .arg(QString::fromStdString(enemy_info[_enemyIdx].name))
+          .arg(_enemyCount));
+  _labelHealth->setText(QString("%1%").arg(_gameState.health));
+  _labelCash->setText(QString::fromStdString(money_string(_gameState.cash)));
+  _labelArmor->setText(QString::number(_gameState.total_armor()));
+
+  // Find best available weapon with ammo (or knife)
+  int best_weapon = -1;
+  for (int i = 8; i >= 0; --i) {
+    if (i == 5 || i == 6) {
+      if (_gameState.ammo_qty[i] > 0) {
+        best_weapon = i;
+        break;
+      }
+    } else if (_gameState.weapon_qty[i] > 0) {
+      if (shop_items[i].ammo_limit == 0 || _gameState.ammo_qty[i] > 0) {
+        best_weapon = i;
+        break;
+      }
+    }
+  }
+
+  if (best_weapon >= 0) {
+    if (best_weapon == 5 || best_weapon == 6) {
+      _labelWeapon->setText(
+          QString::fromStdString(shop_items[best_weapon].ammo_name));
+      _labelAmmo->setText(QString("%1/%2")
+                              .arg(_gameState.ammo_qty[best_weapon])
+                              .arg(shop_items[best_weapon].ammo_limit));
+    } else {
+      _labelWeapon->setText(
+          QString::fromStdString(shop_items[best_weapon].name));
+      if (shop_items[best_weapon].ammo_limit > 0) {
+        _labelAmmo->setText(QString("%1/%2")
+                                .arg(_gameState.ammo_qty[best_weapon])
+                                .arg(shop_items[best_weapon].ammo_limit));
+      } else {
+        _labelAmmo->setText("N/A");
+      }
+    }
+  } else {
+    _labelWeapon->setText("Fists");
+    _labelAmmo->setText("N/A");
+  }
+
+  _buttonBribe->setEnabled(enemy_info[_enemyIdx].can_bribe &&
+                           _gameState.cash > 0 && _enemyCount > 0);
+  _buttonSurrender->setEnabled(enemy_info[_enemyIdx].surrender_accept > 0 &&
+                               _enemyCount > 0);
+}
+
+void WindowCombat::onFightClicked() {
+  if (_enemyCount <= 0 || _gameState.health <= 0) return;
+
+  int best_weapon = -1;
+  for (int i = 8; i >= 0; --i) {
+    if (i == 5 || i == 6) {
+      if (_gameState.ammo_qty[i] > 0) {
+        best_weapon = i;
+        break;
+      }
+    } else if (_gameState.weapon_qty[i] > 0) {
+      if (shop_items[i].ammo_limit == 0 || _gameState.ammo_qty[i] > 0) {
+        best_weapon = i;
+        break;
+      }
+    }
+  }
+
+  static std::random_device rd;
+  static std::mt19937 gen(rd());
+
+  if (best_weapon >= 0) {
+    std::string w_name = (best_weapon == 5 || best_weapon == 6)
+                             ? shop_items[best_weapon].ammo_name
+                             : shop_items[best_weapon].name;
+    if (shop_items[best_weapon].ammo_limit > 0) {
+      _gameState.ammo_qty[best_weapon]--;
+    }
+    int hit_chance = shop_items[best_weapon].hit_chance;
+    if (static_cast<int>(gen() % 100) < hit_chance) {
+      int killed = std::min(_enemyCount, shop_items[best_weapon].damage);
+      _enemyCount -= killed;
+      if (_enemyCount <= 0) {
+        _textLog->append(
+            QString(
+                "You use your %1! You killed the remaining %2! They are all "
+                "dead!")
+                .arg(QString::fromStdString(w_name))
+                .arg(killed));
+        int bounty =
+            (static_cast<int>(gen() % 400) + 100) * (_gameState.rank + 1);
+        _gameState.cash += bounty;
+        _textLog->append(
+            QString("You search the bodies and find $%1!")
+                .arg(QString::fromStdString(money_string(bounty))));
+        _buttonFight->setEnabled(false);
+        _buttonFlee->setEnabled(false);
+        _buttonBribe->setEnabled(false);
+        _buttonSurrender->setText("Done");
+        disconnect(_buttonSurrender, nullptr, nullptr, nullptr);
+        connect(_buttonSurrender, &QPushButton::clicked, this,
+                &QDialog::accept);
+        _updateStatus();
+        emit stateChanged();
+        return;
+      } else {
+        _textLog->append(
+            QString("You use your %1! You killed %2 of them! Only %3 %4.")
+                .arg(QString::fromStdString(w_name))
+                .arg(killed)
+                .arg(_enemyCount)
+                .arg(_enemyCount == 1 ? "remains" : "remain"));
+      }
+    } else {
+      _textLog->append(QString("You use your %1... You miss!")
+                           .arg(QString::fromStdString(w_name)));
+    }
+  } else {
+    _textLog->append("You attack with your bare hands... You miss!");
+  }
+
+  _enemyAttack();
+  _updateStatus();
+  emit stateChanged();
+}
+
+void WindowCombat::_enemyAttack() {
+  if (_enemyCount <= 0) return;
+
+  static std::random_device rd;
+  static std::mt19937 gen(rd());
+
+  if (_enemyCount <= 2 && (gen() % 100 < 25)) {
+    _textLog->append("They decide to flee!");
+    _enemyCount = 0;
+    _buttonFight->setEnabled(false);
+    _buttonFlee->setEnabled(false);
+    _buttonBribe->setEnabled(false);
+    _buttonSurrender->setText("Done");
+    disconnect(_buttonSurrender, nullptr, nullptr, nullptr);
+    connect(_buttonSurrender, &QPushButton::clicked, this, &QDialog::accept);
+    return;
+  }
+
+  int acc = enemy_info[_enemyIdx].accuracy;
+  if (static_cast<int>(gen() % 100) < acc) {
+    int raw_dmg = 5 + static_cast<int>(gen() % 12);
+    int armor = _gameState.total_armor();
+    int dmg = std::max(1, raw_dmg - armor);
+    _gameState.health -= dmg;
+    _textLog->append(
+        QString("They attack you! You have been hit for %1 %2 of damage!")
+            .arg(dmg)
+            .arg(dmg == 1 ? "point" : "points"));
+    if (_gameState.health <= 0) {
+      _gameState.health = 0;
+      _textLog->append("YOU ARE DEAD!");
+      _buttonFight->setEnabled(false);
+      _buttonFlee->setEnabled(false);
+      _buttonBribe->setEnabled(false);
+      _buttonSurrender->setText("Close");
+      disconnect(_buttonSurrender, nullptr, nullptr, nullptr);
+      connect(_buttonSurrender, &QPushButton::clicked, this, &QDialog::reject);
+    }
+  } else {
+    _textLog->append("They attack you but miss!");
+  }
+}
+
+void WindowCombat::onFleeClicked() {
+  if (_enemyCount <= 0 || _gameState.health <= 0) return;
+
+  static std::random_device rd;
+  static std::mt19937 gen(rd());
+
+  int chance = 35 + enemy_info[_enemyIdx].flee_chance;
+  if (static_cast<int>(gen() % 100) < chance) {
+    _textLog->append("You manage to lose them in the streets!");
+    _buttonFight->setEnabled(false);
+    _buttonFlee->setEnabled(false);
+    _buttonBribe->setEnabled(false);
+    _buttonSurrender->setText("Done");
+    disconnect(_buttonSurrender, nullptr, nullptr, nullptr);
+    connect(_buttonSurrender, &QPushButton::clicked, this, &QDialog::accept);
+  } else {
+    _textLog->append("You are unable to shake them.");
+    _enemyAttack();
+  }
+  _updateStatus();
+  emit stateChanged();
+}
+
+void WindowCombat::onBribeClicked() {
+  if (_enemyCount <= 0 || _gameState.health <= 0) return;
+  if (_gameState.cash <= 0) return;
+
+  bool ok = false;
+  int offer = QInputDialog::getInt(
+      this, "Bribe",
+      QString(
+          "You have $%1 to bribe them with.\nHow much do you want to offer?")
+          .arg(QString::fromStdString(money_string(_gameState.cash))),
+      std::min(_gameState.cash, 100), 1, _gameState.cash, 50, &ok);
+  if (!ok || offer <= 0) return;
+
+  static std::random_device rd;
+  static std::mt19937 gen(rd());
+
+  int needed = (enemy_info[_enemyIdx].scale * 80) + (_enemyCount * 30);
+  if (offer >= needed || (gen() % 100 < 50)) {
+    _gameState.cash -= offer;
+    _textLog->append("They accept your bribe!");
+    _buttonFight->setEnabled(false);
+    _buttonFlee->setEnabled(false);
+    _buttonBribe->setEnabled(false);
+    _buttonSurrender->setText("Done");
+    disconnect(_buttonSurrender, nullptr, nullptr, nullptr);
+    connect(_buttonSurrender, &QPushButton::clicked, this, &QDialog::accept);
+  } else {
+    _textLog->append(
+        "They laugh at your attempt! Probably not the best time to be stingy.");
+    _enemyAttack();
+  }
+  _updateStatus();
+  emit stateChanged();
+}
+
+void WindowCombat::onSurrenderClicked() {
+  if (_enemyCount <= 0 || _gameState.health <= 0) return;
+
+  static std::random_device rd;
+  static std::mt19937 gen(rd());
+
+  if (static_cast<int>(gen() % 100) < enemy_info[_enemyIdx].surrender_accept) {
+    bool is_cops =
+        (_enemyIdx <= 1 || _enemyIdx == 4 || _enemyIdx == 8 || _enemyIdx == 9);
+    if (is_cops) {
+      if (_gameState.total_drugs() > 0) {
+        for (int i = 0; i < DRUG_NUM; ++i) _gameState.player_qty[i] = 0;
+        _gameState.pocket = 0;
+        _textLog->append(
+            "They accept your surrender. They seize all your drugs! They "
+            "arrest you and after a few hours in jail, you are let go.");
+      } else {
+        _textLog->append(
+            "They accept your surrender. They search you and find you are "
+            "clean! A brief apology is mumbled.");
+      }
+    } else {
+      _gameState.cash = 0;
+      for (int i = 0; i < DRUG_NUM; ++i) _gameState.player_qty[i] = 0;
+      _gameState.pocket = 0;
+      _textLog->append(
+          "They accept your surrender but take everything! Hope you have money "
+          "in the bank!");
+    }
+    _buttonFight->setEnabled(false);
+    _buttonFlee->setEnabled(false);
+    _buttonBribe->setEnabled(false);
+    _buttonSurrender->setText("Done");
+    disconnect(_buttonSurrender, nullptr, nullptr, nullptr);
+    connect(_buttonSurrender, &QPushButton::clicked, this, &QDialog::accept);
+  } else {
+    _textLog->append("Your surrender is not accepted!");
+    _enemyAttack();
+  }
+  _updateStatus();
+  emit stateChanged();
 }
