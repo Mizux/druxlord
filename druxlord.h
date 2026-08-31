@@ -2,6 +2,7 @@
 
 #include <array>
 #include <string>
+#include <vector>
 
 inline constexpr int DRUG_NUM = 17;
 inline constexpr int CITY_NUM = 15;
@@ -141,8 +142,12 @@ class GameState {
   void newgame();
   void stay_here();
   void generate_drug();
+  void generate_drug_day(int d);
+  void generate_rumors();
   std::string get_market_news(int loc, int d) const;
   int flight_cost(int to_city) const;
+
+  std::vector<std::string> rumors_heard;
 
   // Player pocket inventory
   int player_qty[DRUG_NUM]{};

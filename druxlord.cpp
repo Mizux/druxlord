@@ -188,10 +188,23 @@ void GameState::newgame() {
     player_price[i] = 0;
     vault_qty[i] = 0;
   }
+  for (int i = 0; i < DRUG_NUM; ++i) {
+    for (int j = 0; j < CITY_NUM; ++j) {
+      for (int d = 0; d < DAY_NUM; ++d) {
+        drug_table[i][j][d] = DrugState{};
+      }
+    }
+  }
+  rumors_heard.clear();
   generate_drug();
 }
 
 void GameState::generate_drug() {
+  generate_drug_day(0);
+  generate_rumors();
+}
+
+void GameState::generate_drug_day(int d) {
   static std::random_device rd;
   static std::mt19937 gen(rd());
 
@@ -205,43 +218,44 @@ void GameState::generate_drug() {
       int half = mean / 2;
       int min_price = mean - half;
 
-      // Day 0: Initial target and current price within [Half, Half + Mean - 1]
-      int target_price = half + static_cast<int>(gen() % mean);
-      int current_price = half + static_cast<int>(gen() % mean);
+      if (d == 0) {
+        // Day 0: Initial target and current price within [Half, Half + Mean -
+        // 1]
+        int target_price = half + static_cast<int>(gen() % mean);
+        int current_price = half + static_cast<int>(gen() % mean);
 
-      double price_ratio = static_cast<double>(current_price - min_price) /
-                           static_cast<double>(mean);
-      double target_qty = cap * (1.0 - price_ratio);
-      int qty = std::max(0, static_cast<int>(target_qty));
+        double price_ratio = static_cast<double>(current_price - min_price) /
+                             static_cast<double>(mean);
+        double target_qty = cap * (1.0 - price_ratio);
+        int qty = std::max(0, static_cast<int>(target_qty));
 
-      int event_flag = 0;
-      if (gen() % 50 == 0) {
-        if (gen() % 2 == 0) {
-          // Price Spike (+1)
-          event_flag = 1;
-          int multiplier = static_cast<int>(gen() % 5) + 5;
-          current_price = (mean + static_cast<int>(gen() % half)) * multiplier;
-          int reduction = static_cast<int>(gen() % 5) + 2;
-          qty = qty / reduction;
-        } else {
-          // Price Crash (-1)
-          event_flag = -1;
-          int divisor = static_cast<int>(gen() % 5) + 5;
-          current_price = (mean - static_cast<int>(gen() % half)) / divisor;
-          int flood = static_cast<int>(gen() % 5) + 2;
-          qty = qty * flood;
+        int event_flag = 0;
+        if (gen() % 50 == 0) {
+          if (gen() % 2 == 0) {
+            // Price Spike (+1)
+            event_flag = 1;
+            int multiplier = static_cast<int>(gen() % 5) + 5;
+            current_price =
+                (mean + static_cast<int>(gen() % half)) * multiplier;
+            int reduction = static_cast<int>(gen() % 5) + 2;
+            qty = qty / reduction;
+          } else {
+            // Price Crash (-1)
+            event_flag = -1;
+            int divisor = static_cast<int>(gen() % 5) + 5;
+            current_price = (mean - static_cast<int>(gen() % half)) / divisor;
+            int flood = static_cast<int>(gen() % 5) + 2;
+            qty = qty * flood;
+          }
         }
-      }
 
-      drug_table[i][j][0].qty = qty;
-      drug_table[i][j][0].price = current_price;
-      drug_table[i][j][0].target_price = target_price;
-      drug_table[i][j][0].event_flag = event_flag;
-      drug_table[i][j][0].rumor_flag = 0;
-      drug_table[i][j][0].available = (qty > 0);
-
-      // Subsequent days (1 to DAY_NUM - 1)
-      for (int d = 1; d < DAY_NUM; ++d) {
+        drug_table[i][j][0].qty = qty;
+        drug_table[i][j][0].price = current_price;
+        drug_table[i][j][0].target_price = target_price;
+        drug_table[i][j][0].event_flag = event_flag;
+        drug_table[i][j][0].rumor_flag = 0;
+        drug_table[i][j][0].available = (qty > 0);
+      } else {
         const auto& prev = drug_table[i][j][d - 1];
 
         // Step 2: Price Drift Towards Dynamic Target
@@ -273,24 +287,37 @@ void GameState::generate_drug() {
             std::max(0, static_cast<int>((new_target_qty + prev.qty) / 2.0));
 
         // Step 5: Market Events (Spikes and Crashes)
-        int day_event_flag = 0;
-        if (gen() % 50 == 0) {
-          if (gen() % 2 == 0) {
-            // Price Spike (+1)
-            day_event_flag = 1;
-            int multiplier = static_cast<int>(gen() % 5) + 5;
-            new_current_price =
-                (mean + static_cast<int>(gen() % half)) * multiplier;
-            int reduction = static_cast<int>(gen() % 5) + 2;
-            new_qty = new_qty / reduction;
-          } else {
-            // Price Crash (-1)
-            day_event_flag = -1;
-            int divisor = static_cast<int>(gen() % 5) + 5;
-            new_current_price =
-                (mean - static_cast<int>(gen() % half)) / divisor;
-            int flood = static_cast<int>(gen() % 5) + 2;
-            new_qty = new_qty * flood;
+        int day_event_flag = drug_table[i][j][d].event_flag;
+        int day_rumor_flag = drug_table[i][j][d].rumor_flag;
+
+        if (day_event_flag == 1) {
+          int multiplier = static_cast<int>(gen() % 5) + 5;
+          new_current_price =
+              (mean + static_cast<int>(gen() % half)) * multiplier;
+          int reduction = static_cast<int>(gen() % 5) + 2;
+          new_qty = new_qty / reduction;
+        } else if (day_event_flag == -1) {
+          int divisor = static_cast<int>(gen() % 5) + 5;
+          new_current_price = (mean - static_cast<int>(gen() % half)) / divisor;
+          int flood = static_cast<int>(gen() % 5) + 2;
+          new_qty = new_qty * flood;
+        } else {
+          if (gen() % 50 == 0) {
+            if (gen() % 2 == 0) {
+              day_event_flag = 1;
+              int multiplier = static_cast<int>(gen() % 5) + 5;
+              new_current_price =
+                  (mean + static_cast<int>(gen() % half)) * multiplier;
+              int reduction = static_cast<int>(gen() % 5) + 2;
+              new_qty = new_qty / reduction;
+            } else {
+              day_event_flag = -1;
+              int divisor = static_cast<int>(gen() % 5) + 5;
+              new_current_price =
+                  (mean - static_cast<int>(gen() % half)) / divisor;
+              int flood = static_cast<int>(gen() % 5) + 2;
+              new_qty = new_qty * flood;
+            }
           }
         }
 
@@ -298,9 +325,70 @@ void GameState::generate_drug() {
         drug_table[i][j][d].price = new_current_price;
         drug_table[i][j][d].target_price = new_target_price;
         drug_table[i][j][d].event_flag = day_event_flag;
-        drug_table[i][j][d].rumor_flag = 0;
+        drug_table[i][j][d].rumor_flag = day_rumor_flag;
         drug_table[i][j][d].available = (new_qty > 0);
       }
+    }
+  }
+}
+
+void GameState::generate_rumors() {
+  static std::random_device rd;
+  static std::mt19937 gen(rd());
+
+  rumors_heard.clear();
+  if (day >= DAY_NUM - 1) return;
+
+  // Local rumor (1 in 3 chance)
+  if (gen() % 3 == 0) {
+    int drug_idx = static_cast<int>(gen() % DRUG_NUM);
+    int r = static_cast<int>(gen() % 10);
+    int r_flag = (r <= 6) ? 1 : -1;
+    int base_event = (r <= 6) ? 1 : (r == 9 ? -1 : 0);
+
+    if (gen() % 2 == 0) {
+      int event_flag = base_event;
+      drug_table[drug_idx][location][day + 1].event_flag = event_flag;
+      drug_table[drug_idx][location][day + 1].rumor_flag = r_flag;
+      rumors_heard.push_back(
+          std::format("You hear a rumor that {} will be scarce tomorrow.",
+                      drug_name(drug_info[drug_idx].id)));
+    } else {
+      int event_flag = -base_event;
+      drug_table[drug_idx][location][day + 1].event_flag = event_flag;
+      drug_table[drug_idx][location][day + 1].rumor_flag = r_flag;
+      rumors_heard.push_back(
+          std::format("You hear a rumor that {} will be abundant tomorrow.",
+                      drug_name(drug_info[drug_idx].id)));
+    }
+  }
+
+  // Remote rumor (1 in 3 chance)
+  if (gen() % 3 == 0) {
+    int other_city = static_cast<int>(gen() % (CITY_NUM - 1));
+    if (other_city >= location) other_city++;
+
+    int drug_idx = static_cast<int>(gen() % DRUG_NUM);
+    int r = static_cast<int>(gen() % 10);
+    int r_flag = (r <= 6) ? 1 : -1;
+    int base_event = (r <= 6) ? 1 : (r == 9 ? -1 : 0);
+
+    if (gen() % 2 == 0) {
+      int event_flag = base_event;
+      drug_table[drug_idx][other_city][day + 1].event_flag = event_flag;
+      drug_table[drug_idx][other_city][day + 1].rumor_flag = r_flag;
+      rumors_heard.push_back(
+          std::format("You hear a rumor that {} will be scarce in {} tomorrow.",
+                      drug_name(drug_info[drug_idx].id),
+                      city_name(city_info[other_city].id)));
+    } else {
+      int event_flag = -base_event;
+      drug_table[drug_idx][other_city][day + 1].event_flag = event_flag;
+      drug_table[drug_idx][other_city][day + 1].rumor_flag = r_flag;
+      rumors_heard.push_back(std::format(
+          "You hear a rumor that {} will be abundant in {} tomorrow.",
+          drug_name(drug_info[drug_idx].id),
+          city_name(city_info[other_city].id)));
     }
   }
 }
@@ -327,25 +415,106 @@ void GameState::stay_here() {
       rank = 1;
     }
     pocket_capacity = rank_capacity[rank];
+    generate_drug_day(day);
+    generate_rumors();
   }
 }
 
 std::string GameState::get_market_news(int loc, int d) const {
   std::string news;
+
+  // 1. Rumor resolutions for current location on day d
   for (int i = 0; i < DRUG_NUM; ++i) {
-    if (drug_table[i][loc][d].event_flag == 1) {
+    int r_flag = drug_table[i][loc][d].rumor_flag;
+    if (r_flag != 0) {
       if (!news.empty()) news += "\n\n";
-      news += std::format(
-          "Prices go through the roof!\nCops burst into a {} "
-          "warehouse, seizing everything.",
-          drug_name(drug_info[i].id));
-    } else if (drug_table[i][loc][d].event_flag == -1) {
-      if (!news.empty()) news += "\n\n";
-      news += std::format(
-          "Prices plummet!\nCrates of {} were discovered "
-          "floating in the ocean.",
-          drug_name(drug_info[i].id));
+      news += std::format("The {} rumor was {}!", drug_name(drug_info[i].id),
+                          r_flag == 1 ? "true" : "false");
     }
   }
+
+  // 2. Event headlines and reasons for location on day d
+  auto format_spike_reason = [](size_t idx, const std::string& name) {
+    switch (idx) {
+      case 0:
+        return std::format(
+            "The pilot of a {} shipment fell asleep and crashed.", name);
+      case 1:
+        return std::format(
+            "The smuggler of some {} was killed by a rival dealer.", name);
+      case 2:
+        return std::format(
+            "Cops burst into a {} warehouse, seizing everything.", name);
+      case 3:
+        return std::format(
+            "Racoons broke into a crate of {}, eating some and dying on the "
+            "rest.",
+            name);
+      default:
+        return std::format("Gang warfare is keeping {} off the streets.", name);
+    }
+  };
+
+  static const std::string spike_headlines[] = {
+      "Prices are higher than the people who use your goods!",
+      "Prices go through the roof!", "Prices are outrageous!",
+      "Prices are insanely high!", "Prices are astronomical!"};
+
+  auto format_crash_reason = [](size_t idx, const std::string& name) {
+    switch (idx) {
+      case 0:
+        return std::format(
+            "Crates of {} were discovered floating in the ocean.", name);
+      case 1:
+        return std::format("A new {} dealer has arrived in town.", name);
+      case 2:
+        return std::format("A new source of {} is found.", name);
+      case 3:
+        return std::format(
+            "A police warehouse is broken into and {} is stolen.", name);
+      default:
+        return std::format("A boatload of {} arrives.", name);
+    }
+  };
+
+  static const std::string crash_headlines[] = {
+      "Prices are rock bottom!", "Prices drop like lead balloons!",
+      "Prices plummet!", "Prices nose dive!",
+      "Prices are lower than the Marianas Trench!"};
+
+  for (int i = 0; i < DRUG_NUM; ++i) {
+    int e_flag = drug_table[i][loc][d].event_flag;
+    if (e_flag == 1) {
+      if (!news.empty()) news += "\n\n";
+      size_t r_idx = (i + loc + d) % 5;
+      size_t h_idx = (i * 2 + loc + d) % 5;
+      news +=
+          std::format("{}\n{}", spike_headlines[h_idx],
+                      format_spike_reason(r_idx, drug_name(drug_info[i].id)));
+    } else if (e_flag == -1) {
+      if (!news.empty()) news += "\n\n";
+      size_t r_idx = (i + loc + d) % 5;
+      size_t h_idx = (i * 2 + loc + d) % 5;
+      news +=
+          std::format("{}\n{}", crash_headlines[h_idx],
+                      format_crash_reason(r_idx, drug_name(drug_info[i].id)));
+    }
+  }
+
+  // 3. Rumors heard today for tomorrow (only shown in player's current
+  // location)
+  if (loc == location) {
+    for (const auto& rumor : rumors_heard) {
+      if (!news.empty()) news += "\n\n";
+      news += rumor;
+    }
+  }
+
+  // 4. Last day warning
+  if (d >= DAY_NUM - 1) {
+    if (!news.empty()) news += "\n\n";
+    news += "This is the last day! Better sell all you can!";
+  }
+
   return news;
 }
