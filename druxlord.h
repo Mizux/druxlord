@@ -89,6 +89,7 @@ struct City {
   CityType id;
   CountryType country;
   int price_factor;
+  int distance;
 };
 
 struct Drug {
@@ -127,6 +128,7 @@ inline constexpr std::array<int, RANK_NUM> rank_capacity = {10,  25,   100,
 std::string drug_name(DrugType type);
 std::string city_name(CityType type);
 std::string country_name(CountryType type);
+int flight_cost(int from_city, int to_city);
 
 extern const std::array<Drug, DRUG_NUM> drug_info;
 extern const std::array<Weapon, WEAPON_NUM> weapon_info;
@@ -140,6 +142,7 @@ class GameState {
   void stay_here();
   void generate_drug();
   std::string get_market_news(int loc, int d) const;
+  int flight_cost(int to_city) const;
 
   // Player pocket inventory
   int player_qty[DRUG_NUM]{};

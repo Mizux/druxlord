@@ -1383,3 +1383,127 @@ void WindowInput::_setupWidget(const QString& title, const QString& message,
 
   layout()->setSizeConstraint(QLayout::SetFixedSize);
 }
+
+// WindowFlyAway Implementation
+
+WindowFlyAway::WindowFlyAway(GameState& gameState, QWidget* parent)
+    : QDialog(parent), _gameState(gameState) {
+  _setupWidget();
+}
+
+void WindowFlyAway::_setupWidget() {
+  setWindowTitle("Fly Away");
+  setModal(true);
+
+  QVBoxLayout* vbox_main = new QVBoxLayout(this);
+  vbox_main->setContentsMargins(10, 10, 10, 10);
+  vbox_main->setSpacing(8);
+
+  QHBoxLayout* hbox_header = new QHBoxLayout();
+  QLabel* label_dest = new QLabel("Select destination city:", this);
+  hbox_header->addWidget(label_dest);
+  hbox_header->addStretch();
+  _label_cash = new QLabel(QString::fromStdString(std::format(
+                               "Cash: ${}", money_string(_gameState.cash))),
+                           this);
+  hbox_header->addWidget(_label_cash);
+  vbox_main->addLayout(hbox_header);
+
+  _city_list = new QListWidget(this);
+  _populateCityList();
+  vbox_main->addWidget(_city_list);
+
+  QHBoxLayout* btn_box = new QHBoxLayout();
+  btn_box->addStretch();
+  _button_fly = new QPushButton("Fly", this);
+  _button_cancel = new QPushButton("Cancel", this);
+  btn_box->addWidget(_button_fly);
+  btn_box->addWidget(_button_cancel);
+  vbox_main->addLayout(btn_box);
+
+  connect(_city_list, &QListWidget::itemSelectionChanged, this,
+          &WindowFlyAway::onSelectionChanged);
+  connect(_city_list, &QListWidget::itemDoubleClicked, this,
+          [this](QListWidgetItem* item) {
+            if (item && (item->flags() & Qt::ItemIsEnabled)) {
+              onFlyClicked();
+            }
+          });
+  connect(_button_cancel, &QPushButton::clicked, this, &QDialog::reject);
+  connect(_button_fly, &QPushButton::clicked, this,
+          &WindowFlyAway::onFlyClicked);
+
+  onSelectionChanged();
+}
+
+void WindowFlyAway::_populateCityList() {
+  _city_list->clear();
+  int first_valid = -1;
+
+  for (int i = 0; i < CITY_NUM; ++i) {
+    int cost = flight_cost(_gameState.location, i);
+    bool is_current = (i == _gameState.location);
+    bool can_afford = (_gameState.cash >= cost);
+
+    std::string text;
+    if (is_current) {
+      text = std::format("{}, {} (Current)", city_name(city_info[i].id),
+                         country_name(city_info[i].country));
+    } else {
+      text =
+          std::format("{}, {} (${})", city_name(city_info[i].id),
+                      country_name(city_info[i].country), money_string(cost));
+    }
+
+    QListWidgetItem* item =
+        new QListWidgetItem(QString::fromStdString(text), _city_list);
+    item->setData(Qt::UserRole, i);
+    item->setData(Qt::UserRole + 1, cost);
+
+    if (is_current) {
+      item->setFlags(item->flags() & ~Qt::ItemIsEnabled &
+                     ~Qt::ItemIsSelectable);
+      item->setToolTip("You are already here");
+    } else if (!can_afford) {
+      item->setFlags(item->flags() & ~Qt::ItemIsEnabled &
+                     ~Qt::ItemIsSelectable);
+      item->setToolTip("Too expensive: insufficient funds");
+    } else {
+      if (first_valid == -1) {
+        first_valid = i;
+      }
+    }
+  }
+
+  if (first_valid >= 0) {
+    _city_list->setCurrentRow(first_valid);
+  }
+}
+
+void WindowFlyAway::onSelectionChanged() {
+  QListWidgetItem* item = _city_list->currentItem();
+  if (!item || !(item->flags() & Qt::ItemIsEnabled)) {
+    _button_fly->setEnabled(false);
+    return;
+  }
+  int dest = item->data(Qt::UserRole).toInt();
+  int cost = item->data(Qt::UserRole + 1).toInt();
+  _button_fly->setEnabled(dest != _gameState.location &&
+                          _gameState.cash >= cost);
+}
+
+void WindowFlyAway::onFlyClicked() {
+  QListWidgetItem* item = _city_list->currentItem();
+  if (!item || !(item->flags() & Qt::ItemIsEnabled)) return;
+  int dest = item->data(Qt::UserRole).toInt();
+  int cost = item->data(Qt::UserRole + 1).toInt();
+  if (dest >= 0 && dest < CITY_NUM && dest != _gameState.location) {
+    if (_gameState.cash >= cost) {
+      _gameState.cash -= cost;
+      _gameState.location = dest;
+      _gameState.stay_here();
+      emit stateChanged();
+      accept();
+    }
+  }
+}

@@ -260,51 +260,22 @@ void window_main_button_stayhere_clicked_cb(MainWindow& window) {
 }
 
 void window_main_button_flyaway_clicked_cb(MainWindow& window) {
-  auto& game_state = window.gameState();
-  QDialog dlg(&window);
-  dlg.setWindowTitle("Fly Away");
-  dlg.setModal(true);
-  QVBoxLayout* layout = new QVBoxLayout(&dlg);
-  layout->addWidget(
-      new QLabel("Select destination city (Ticket: $200):", &dlg));
-
-  QListWidget* city_list = new QListWidget(&dlg);
-  for (int i = 0; i < CITY_NUM; ++i) {
-    std::string text = std::format("{}, {}", city_name(city_info[i].id),
-                                   country_name(city_info[i].country));
-    if (i == game_state.location) {
-      text += " (Current)";
+  WindowFlyAway dlg(window.gameState(), &window);
+  QObject::connect(&dlg, &WindowFlyAway::stateChanged,
+                   [&window]() { window.updateAllUi(); });
+  if (dlg.exec() == QDialog::Accepted) {
+    window.updateAllUi();
+    const auto& game_state = window.gameState();
+    if (game_state.day >= DAY_NUM - 1) {
+      int score = game_state.cash + game_state.bank - game_state.debt;
+      if (score < 0) score = 0;
+      std::string msg = std::format(
+          "That's it, the game is over! You have a final score of ${}",
+          money_string(score));
+      QMessageBox::information(&window, "Game Over",
+                               QString::fromStdString(msg));
     }
-    city_list->addItem(QString::fromStdString(text));
   }
-  city_list->setCurrentRow((game_state.location + 1) % CITY_NUM);
-  layout->addWidget(city_list);
-
-  QHBoxLayout* btn_box = new QHBoxLayout();
-  QPushButton* btn_fly = new QPushButton("Fly", &dlg);
-  QPushButton* btn_cancel = new QPushButton("Cancel", &dlg);
-  btn_box->addStretch();
-  btn_box->addWidget(btn_fly);
-  btn_box->addWidget(btn_cancel);
-  layout->addLayout(btn_box);
-
-  QObject::connect(btn_cancel, &QPushButton::clicked, &dlg, &QDialog::close);
-  QObject::connect(btn_fly, &QPushButton::clicked, [&]() {
-    int dest = city_list->currentRow();
-    if (dest >= 0 && dest < CITY_NUM) {
-      if (dest != game_state.location) {
-        if (game_state.cash >= 200) {
-          game_state.cash -= 200;
-        }
-        game_state.location = dest;
-        game_state.stay_here();
-      }
-      dlg.close();
-      window.updateAllUi();
-    }
-  });
-
-  dlg.exec();
 }
 
 void window_main_button_about_clicked_cb(MainWindow& window) {

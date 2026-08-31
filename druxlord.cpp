@@ -133,21 +133,33 @@ const std::array<Weapon, WEAPON_NUM> weapon_info = {
       500000}}};
 
 const std::array<City, CITY_NUM> city_info = {
-    {{CityType::Austin, CountryType::USA, 100},
-     {CityType::Beijing, CountryType::China, 190},
-     {CityType::Boston, CountryType::USA, 120},
-     {CityType::Detroit, CountryType::USA, 80},
-     {CityType::London, CountryType::UK, 110},
-     {CityType::LosAngeles, CountryType::USA, 110},
-     {CityType::Miami, CountryType::USA, 90},
-     {CityType::Moscow, CountryType::Russia, 160},
-     {CityType::NewYork, CountryType::USA, 100},
-     {CityType::Paris, CountryType::France, 90},
-     {CityType::SanFrancisco, CountryType::USA, 80},
-     {CityType::StPetersburg, CountryType::Russia, 150},
-     {CityType::Sydney, CountryType::Australia, 110},
-     {CityType::Toronto, CountryType::Canada, 100},
-     {CityType::Vancouver, CountryType::Canada, 100}}};
+    {{CityType::Austin, CountryType::USA, 100, 1861},
+     {CityType::Beijing, CountryType::China, 190, 5307},
+     {CityType::Boston, CountryType::USA, 120, 2509},
+     {CityType::Detroit, CountryType::USA, 80, 1963},
+     {CityType::London, CountryType::UK, 110, 4725},
+     {CityType::LosAngeles, CountryType::USA, 110, 1072},
+     {CityType::Miami, CountryType::USA, 90, 2802},
+     {CityType::Moscow, CountryType::Russia, 160, 5113},
+     {CityType::NewYork, CountryType::USA, 100, 2435},
+     {CityType::Paris, CountryType::France, 90, 4937},
+     {CityType::SanFrancisco, CountryType::USA, 80, 791},
+     {CityType::StPetersburg, CountryType::Russia, 150, 4761},
+     {CityType::Sydney, CountryType::Australia, 110, 7757},
+     {CityType::Toronto, CountryType::Canada, 100, 2091},
+     {CityType::Vancouver, CountryType::Canada, 100, 0}}};
+
+int flight_cost(int from_city, int to_city) {
+  if (from_city < 0 || from_city >= CITY_NUM || to_city < 0 ||
+      to_city >= CITY_NUM) {
+    return 0;
+  }
+  return std::abs(city_info[from_city].distance - city_info[to_city].distance);
+}
+
+int GameState::flight_cost(int to_city) const {
+  return ::flight_cost(location, to_city);
+}
 
 std::string money_string(unsigned int value) {
   std::string s = std::to_string(value);

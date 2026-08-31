@@ -5,6 +5,7 @@
 #include <QGroupBox>
 #include <QKeySequence>
 #include <QLabel>
+#include <QListWidget>
 #include <QMenu>
 #include <QProgressBar>
 #include <QPushButton>
@@ -385,3 +386,37 @@ class WindowInput : public QDialog {
 };
 
 using InputDialog = WindowInput;
+
+class WindowFlyAway : public QDialog {
+  Q_OBJECT
+
+ public:
+  explicit WindowFlyAway(GameState& gameState, QWidget* parent = nullptr);
+  virtual ~WindowFlyAway() = default;
+
+  WindowFlyAway(const WindowFlyAway&) = delete;
+  WindowFlyAway& operator=(const WindowFlyAway&) = delete;
+
+  QListWidget* cityList() const { return _city_list; }
+  QPushButton* buttonFly() const { return _button_fly; }
+  QPushButton* buttonCancel() const { return _button_cancel; }
+
+ signals:
+  void stateChanged();
+
+ private slots:
+  void onSelectionChanged();
+  void onFlyClicked();
+
+ private:
+  void _setupWidget();
+  void _populateCityList();
+
+  GameState& _gameState;
+  QLabel* _label_cash = nullptr;
+  QListWidget* _city_list = nullptr;
+  QPushButton* _button_fly = nullptr;
+  QPushButton* _button_cancel = nullptr;
+};
+
+using FlyAwayDialog = WindowFlyAway;
