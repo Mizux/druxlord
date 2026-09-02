@@ -152,9 +152,6 @@ class MainWindow : public QWidget {
   QShortcut* _shortcut_quit = nullptr;
 };
 
-using WindowMain = MainWindow;
-using MainWindows = MainWindow;
-
 class WindowFinance : public QDialog {
   Q_OBJECT
 

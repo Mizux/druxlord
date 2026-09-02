@@ -1,6 +1,5 @@
 #include <QApplication>
 
-#include "druxlord.h"
 #include "window.h"
 
 int main(int argc, char* argv[]) {
@@ -8,7 +7,7 @@ int main(int argc, char* argv[]) {
   app.setOrganizationName("Mizux");
   app.setApplicationName("DruxLord");
 
-  MainWindows main;
+  MainWindow main;
   main.show();
   return app.exec();
 }
