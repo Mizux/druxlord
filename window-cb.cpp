@@ -302,9 +302,8 @@ void window_main_button_flyaway_clicked_cb(MainWindow& window) {
 
 void window_main_button_about_clicked_cb(MainWindow& window) {
   std::string info =
-      std::format("{}\n{}\n\nAuthor: {}\nEmail: {}\nVersion: {}", kProgramName,
-                  kProgramDescription, kProgramAuthorName, kProgramAuthorEmail,
-                  kProgramVersion);
+      std::format("{}\n{}\n\nAuthor: {}\nVersion: {}", kProgramName,
+                  kProgramDescription, kProgramAuthorName, kProgramVersion);
   QMessageBox::about(&window, "About Drux Lord", QString::fromStdString(info));
 }
 
