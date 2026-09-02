@@ -294,7 +294,7 @@ void MainWindow::_setupWidget() {
   QVBoxLayout* vbox_market = new QVBoxLayout(frame_market);
   vbox_market->setContentsMargins(5, 5, 5, 5);
   _treeview_market = create_treeview_drug(true);
-  _treeview_market->setMinimumSize(270, 240);
+  _treeview_market->setMinimumSize(280, 240);
   vbox_market->addWidget(_treeview_market);
   hbox_down->addWidget(frame_market);
 
