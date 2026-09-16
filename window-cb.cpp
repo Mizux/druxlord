@@ -68,6 +68,7 @@ void window_main_button_buy_clicked_cb(MainWindow& window) {
           (prev_price * prev_qty + cost) / (prev_qty + count);
       game_state.player_qty[drug_idx] += count;
       game_state.drug_table[drug_idx][j][d].qty -= count;
+      game_state.drug_table[drug_idx][j][d].traded = true;
       if (game_state.drug_table[drug_idx][j][d].qty <= 0) {
         game_state.drug_table[drug_idx][j][d].available = false;
       }
@@ -117,6 +118,7 @@ void window_main_button_sell_clicked_cb(MainWindow& window) {
       game_state.cash += gain;
       game_state.pocket -= count;
       game_state.player_qty[drug_idx] -= count;
+      game_state.drug_table[drug_idx][j][d].traded = true;
       if (game_state.player_qty[drug_idx] == 0) {
         game_state.player_price[drug_idx] = 0;
       }
@@ -240,7 +242,12 @@ void menuitem_info_shipment_status_activate_cb(MainWindow& window) {
 }
 
 void menuitem_info_history_activate_cb(MainWindow& window) {
-  QMessageBox::information(&window, "History", "No history available.");
+  int item_idx = window.statusChartView()
+                     ? window.statusChartView()->itemIndex()
+                     : HistoryChartView::ITEM_CASH;
+  int city_idx = window.gameState().location;
+  WindowHistory dlg(window.gameState(), item_idx, city_idx, &window);
+  dlg.exec();
 }
 
 // Main window buttons

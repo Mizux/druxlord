@@ -75,8 +75,8 @@ set(CMAKE_AUTORCC ON)
 set(CMAKE_AUTOUIC ON)
 
 # Dependencies
-find_package(QT NAMES Qt6 Qt5 REQUIRED COMPONENTS Widgets)
-find_package(Qt${QT_VERSION_MAJOR} REQUIRED COMPONENTS Widgets)
+find_package(Qt6 REQUIRED COMPONENTS Widgets Charts)
+set(QT_VERSION_MAJOR 6)
 
 # Disable CTest targets
 set_property(GLOBAL PROPERTY CTEST_TARGETS_ADDED 1)
@@ -116,6 +116,7 @@ endif()
 
 target_link_libraries(druxlord PRIVATE
   Qt${QT_VERSION_MAJOR}::Widgets
+  Qt${QT_VERSION_MAJOR}::Charts
 )
 add_executable(${PROJECT_NAMESPACE}::druxlord ALIAS druxlord)
 

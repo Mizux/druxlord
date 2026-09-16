@@ -5,6 +5,7 @@
 #include <QButtonGroup>
 #include <QCheckBox>
 #include <QDialog>
+#include <QGraphicsLayout>
 #include <QGridLayout>
 #include <QGroupBox>
 #include <QHeaderView>
@@ -22,6 +23,7 @@
 #include <QTextEdit>
 #include <QTreeWidget>
 #include <QWidget>
+#include <algorithm>
 #include <array>
 #include <format>
 #include <random>
@@ -116,6 +118,284 @@ static QTreeWidget* create_treeview_drug_list() {
   return treeview;
 }
 
+// HistoryChartView Implementation
+
+HistoryChartView::HistoryChartView(bool compact, QWidget* parent)
+    : QChartView(parent), _compact(compact) {
+  _setupChart();
+}
+
+void HistoryChartView::_setupChart() {
+  _chart = new QChart();
+  _chart->legend()->hide();
+  _chart->setBackgroundBrush(QBrush(Qt::black));
+  _chart->setPlotAreaBackgroundBrush(QBrush(Qt::black));
+  _chart->setPlotAreaBackgroundVisible(true);
+  _chart->setBackgroundRoundness(0);
+
+  if (_compact) {
+    _chart->setMargins(QMargins(2, 2, 2, 2));
+    if (_chart->layout()) {
+      _chart->layout()->setContentsMargins(0, 0, 0, 0);
+    }
+    QFont titleFont = _chart->titleFont();
+    titleFont.setPointSize(8);
+    titleFont.setBold(true);
+    _chart->setTitleFont(titleFont);
+    _chart->setTitleBrush(QBrush(QColor(0, 255, 0)));
+  } else {
+    _chart->setMargins(QMargins(8, 8, 8, 8));
+    QFont titleFont = _chart->titleFont();
+    titleFont.setPointSize(11);
+    titleFont.setBold(true);
+    _chart->setTitleFont(titleFont);
+    _chart->setTitleBrush(QBrush(QColor(0, 255, 0)));
+  }
+
+  _axis_x = new QValueAxis();
+  _axis_x->setRange(1, DAY_NUM);
+  _axis_x->setTickCount(6);
+  _axis_x->setLabelFormat("%d");
+  _axis_x->setLabelsColor(QColor(180, 180, 180));
+  _axis_x->setGridLineColor(QColor(40, 40, 40));
+  _axis_x->setLinePenColor(QColor(100, 100, 100));
+  if (_compact) {
+    _axis_x->setLabelsVisible(false);
+    _axis_x->setGridLineVisible(false);
+    _axis_x->setLineVisible(false);
+  } else {
+    _axis_x->setTitleText("Day");
+    _axis_x->setTitleBrush(QBrush(QColor(180, 180, 180)));
+  }
+
+  _axis_y = new QValueAxis();
+  _axis_y->setLabelFormat("%d");
+  _axis_y->setLabelsColor(QColor(180, 180, 180));
+  _axis_y->setGridLineColor(QColor(40, 40, 40));
+  _axis_y->setLinePenColor(QColor(100, 100, 100));
+  if (_compact) {
+    _axis_y->setLabelsVisible(false);
+    _axis_y->setGridLineVisible(false);
+    _axis_y->setLineVisible(false);
+  }
+
+  _chart->addAxis(_axis_x, Qt::AlignBottom);
+  _chart->addAxis(_axis_y, Qt::AlignLeft);
+
+  _series_min = new QLineSeries();
+  _series_min->setPen(QPen(QColor(128, 128, 128), 1, Qt::SolidLine));
+
+  _series_max = new QLineSeries();
+  _series_max->setPen(QPen(QColor(128, 128, 128), 1, Qt::SolidLine));
+
+  _series_avg = new QLineSeries();
+  _series_avg->setPen(QPen(QColor(128, 128, 128), 1, Qt::DotLine));
+
+  _series_data = new QLineSeries();
+  _series_data->setPen(
+      QPen(QColor(255, 204, 0), _compact ? 1.5 : 2.0, Qt::SolidLine));
+
+  _series_points = new QScatterSeries();
+  _series_points->setMarkerShape(QScatterSeries::MarkerShapeCircle);
+  _series_points->setMarkerSize(_compact ? 3.5 : 5.0);
+  _series_points->setColor(QColor(255, 204, 0));
+  _series_points->setBorderColor(QColor(255, 204, 0));
+
+  _series_traded = new QScatterSeries();
+  _series_traded->setMarkerShape(QScatterSeries::MarkerShapeRectangle);
+  _series_traded->setMarkerSize(_compact ? 7.0 : 10.0);
+  _series_traded->setColor(Qt::transparent);
+  _series_traded->setBorderColor(QColor(255, 0, 0));
+
+  _chart->addSeries(_series_min);
+  _chart->addSeries(_series_max);
+  _chart->addSeries(_series_avg);
+  _chart->addSeries(_series_data);
+  _chart->addSeries(_series_points);
+  _chart->addSeries(_series_traded);
+
+  for (auto* s : std::initializer_list<QAbstractSeries*>{
+           _series_min, _series_max, _series_avg, _series_data, _series_points,
+           _series_traded}) {
+    s->attachAxis(_axis_x);
+    s->attachAxis(_axis_y);
+  }
+
+  setChart(_chart);
+  setRenderHint(QPainter::Antialiasing);
+  setFrameShape(QFrame::NoFrame);
+  setContentsMargins(0, 0, 0, 0);
+}
+
+QString HistoryChartView::itemName(int item_idx) {
+  switch (item_idx) {
+    case ITEM_CASH:
+      return "Your Cash";
+    case ITEM_DEBT:
+      return "Your Debt";
+    case ITEM_HEALTH:
+      return "Your Health";
+    default: {
+      int drug_idx = item_idx - ITEM_FIRST_DRUG;
+      if (drug_idx >= 0 && drug_idx < DRUG_NUM) {
+        return QString::fromStdString(drug_name(drug_info[drug_idx].id));
+      }
+      return "Unknown";
+    }
+  }
+}
+
+void HistoryChartView::setItemIndex(int idx) {
+  int clamped = std::clamp(idx, 0, TOTAL_ITEMS - 1);
+  if (_item_idx != clamped) {
+    _item_idx = clamped;
+    emit itemChanged(_item_idx);
+  }
+}
+
+void HistoryChartView::setCityIndex(int idx) {
+  if (idx >= 0 && idx < CITY_NUM) {
+    _city_idx = idx;
+  }
+}
+
+void HistoryChartView::updateChart(const GameState& gameState, int city_idx) {
+  if (city_idx >= 0 && city_idx < CITY_NUM) {
+    _city_idx = city_idx;
+  } else if (_city_idx < 0 || _city_idx >= CITY_NUM) {
+    _city_idx = gameState.location;
+  }
+
+  _series_min->clear();
+  _series_max->clear();
+  _series_avg->clear();
+  _series_data->clear();
+  _series_points->clear();
+  _series_traded->clear();
+
+  if (_compact) {
+    _chart->setTitle(itemName(_item_idx));
+  } else {
+    if (_item_idx >= ITEM_FIRST_DRUG) {
+      _chart->setTitle(
+          QString("%1 — %2")
+              .arg(itemName(_item_idx))
+              .arg(QString::fromStdString(city_name(city_info[_city_idx].id))));
+    } else {
+      _chart->setTitle(itemName(_item_idx));
+    }
+  }
+
+  int max_day = std::clamp(gameState.day, 0, DAY_NUM - 1);
+  double min_val = 1e18;
+  double max_val = -1e18;
+
+  auto record_val = [&](double v) {
+    if (v < min_val) min_val = v;
+    if (v > max_val) max_val = v;
+  };
+
+  if (_item_idx == ITEM_CASH) {
+    for (int d = 0; d <= max_day; ++d) {
+      double v = (d == gameState.day) ? gameState.cash
+                                      : gameState.cash_history[d];
+      _series_data->append(d + 1, v);
+      _series_points->append(d + 1, v);
+      record_val(v);
+    }
+  } else if (_item_idx == ITEM_DEBT) {
+    for (int d = 0; d <= max_day; ++d) {
+      double v = (d == gameState.day) ? gameState.debt
+                                      : gameState.debt_history[d];
+      _series_data->append(d + 1, v);
+      _series_points->append(d + 1, v);
+      record_val(v);
+    }
+  } else if (_item_idx == ITEM_HEALTH) {
+    _series_min->append(1, 0);
+    _series_min->append(DAY_NUM, 0);
+    _series_max->append(1, 100);
+    _series_max->append(DAY_NUM, 100);
+    record_val(0);
+    record_val(100);
+    for (int d = 0; d <= max_day; ++d) {
+      double v = (d == gameState.day) ? gameState.health
+                                      : gameState.health_history[d];
+      _series_data->append(d + 1, v);
+      _series_points->append(d + 1, v);
+      record_val(v);
+    }
+  } else {
+    int drug_idx = std::clamp(_item_idx - ITEM_FIRST_DRUG, 0, DRUG_NUM - 1);
+    int base_price = drug_info[drug_idx].price;
+    int city_factor = city_info[_city_idx].price_factor;
+    int mean = (base_price * city_factor) / 100;
+    int half = mean / 2;
+    int min_normal = mean - half;
+    int max_normal = mean + half;
+
+    _series_min->append(1, min_normal);
+    _series_min->append(DAY_NUM, min_normal);
+    _series_max->append(1, max_normal);
+    _series_max->append(DAY_NUM, max_normal);
+    _series_avg->append(1, mean);
+    _series_avg->append(DAY_NUM, mean);
+    record_val(min_normal);
+    record_val(max_normal);
+
+    for (int d = 0; d <= max_day; ++d) {
+      double v = gameState.drug_table[drug_idx][_city_idx][d].price;
+      _series_data->append(d + 1, v);
+      _series_points->append(d + 1, v);
+      if (gameState.drug_table[drug_idx][_city_idx][d].traded) {
+        _series_traded->append(d + 1, v);
+      }
+      record_val(v);
+    }
+  }
+
+  if (min_val > max_val) {
+    min_val = 0;
+    max_val = 100;
+  }
+  if (_item_idx == ITEM_HEALTH) {
+    _axis_y->setRange(0, 105);
+  } else {
+    double span = max_val - min_val;
+    double pad = std::max(10.0, span * 0.12);
+    _axis_y->setRange(std::max(0.0, min_val - pad), max_val + pad);
+  }
+}
+
+void HistoryChartView::mousePressEvent(QMouseEvent* event) {
+  if (_compact && event->button() == Qt::LeftButton) {
+    setItemIndex((_item_idx + 1) % TOTAL_ITEMS);
+    event->accept();
+    return;
+  }
+  QChartView::mousePressEvent(event);
+}
+
+void HistoryChartView::contextMenuEvent(QContextMenuEvent* event) {
+  QMenu menu(this);
+  QAction* zoomAction = menu.addAction("Zoom in...");
+  connect(zoomAction, &QAction::triggered, this,
+          [this]() { emit zoomRequested(_item_idx, _city_idx); });
+  menu.addSeparator();
+
+  for (int i = 0; i < TOTAL_ITEMS; ++i) {
+    if (i == ITEM_FIRST_DRUG) {
+      menu.addSeparator();
+    }
+    QAction* act = menu.addAction(itemName(i));
+    act->setCheckable(true);
+    act->setChecked(i == _item_idx);
+    connect(act, &QAction::triggered, this, [this, i]() { setItemIndex(i); });
+  }
+
+  menu.exec(event->globalPos());
+}
+
 // MainWindow Implementation
 
 MainWindow::MainWindow(QWidget* parent) : QWidget(parent), _gameState() {
@@ -130,6 +410,7 @@ MainWindow::MainWindow(GameState game_state, QWidget* parent)
 }
 
 void MainWindow::updateAllUi() {
+  _gameState.record_daily_history();
   _setLabelLocation(_gameState.location);
   _setLabelHealth(_gameState.health);
   _setLabelDay(_gameState.day + 1);
@@ -140,6 +421,9 @@ void MainWindow::updateAllUi() {
   _setLabelPocket(_gameState.pocket, _gameState.pocket_capacity);
   _fillTreeviewMarket();
   _fillTreeviewPocket();
+  if (_drawingarea_status) {
+    _drawingarea_status->updateChart(_gameState, _gameState.location);
+  }
   if (_textview_information) {
     std::string news =
         _gameState.get_market_news(_gameState.location, _gameState.day);
@@ -295,6 +579,12 @@ void MainWindow::_setupWidget() {
   vbox_market->setContentsMargins(5, 5, 5, 5);
   _treeview_market = create_treeview_drug(true);
   _treeview_market->setMinimumSize(280, 240);
+  connect(_treeview_market, &QTreeWidget::itemSelectionChanged, this,
+          &MainWindow::onMarketItemSelectionChanged);
+  connect(_treeview_market, &QTreeWidget::itemClicked, this,
+          [this](QTreeWidgetItem*, int) { onMarketItemSelectionChanged(); });
+  connect(_treeview_market, &QTreeWidget::itemDoubleClicked, this,
+          [this](QTreeWidgetItem*, int) { slotBuy(); });
   vbox_market->addWidget(_treeview_market);
   hbox_down->addWidget(frame_market);
 
@@ -393,6 +683,12 @@ void MainWindow::_setupWidget() {
 
   _treeview_pocket = create_treeview_drug(false);
   _treeview_pocket->setMinimumSize(250, 180);
+  connect(_treeview_pocket, &QTreeWidget::itemSelectionChanged, this,
+          &MainWindow::onPocketItemSelectionChanged);
+  connect(_treeview_pocket, &QTreeWidget::itemClicked, this,
+          [this](QTreeWidgetItem*, int) { onPocketItemSelectionChanged(); });
+  connect(_treeview_pocket, &QTreeWidget::itemDoubleClicked, this,
+          [this](QTreeWidgetItem*, int) { slotSell(); });
   vbox_pocket->addWidget(_treeview_pocket);
   vbox_right->addWidget(_group_pocket);
 
@@ -446,10 +742,10 @@ void MainWindow::_setupWidget() {
   vbox_status->addLayout(box_day_rank);
 
   QHBoxLayout* box_money_status = new QHBoxLayout();
-  box_money_status->setSpacing(0);
+  box_money_status->setSpacing(10);
 
   QGridLayout* grid_money = new QGridLayout();
-  grid_money->setHorizontalSpacing(50);
+  grid_money->setHorizontalSpacing(20);
   grid_money->setVerticalSpacing(5);
 
   QLabel* label_cash_title = new QLabel("Cash:", frame_status);
@@ -472,7 +768,14 @@ void MainWindow::_setupWidget() {
 
   box_money_status->addLayout(grid_money);
 
-  _drawingarea_status = new QWidget(frame_status);
+  _drawingarea_status = new HistoryChartView(true, frame_status);
+  _drawingarea_status->setFixedSize(145, 85);
+  connect(_drawingarea_status, &HistoryChartView::itemChanged, this,
+          [this](int) {
+            _drawingarea_status->updateChart(_gameState, _gameState.location);
+          });
+  connect(_drawingarea_status, &HistoryChartView::zoomRequested, this,
+          &MainWindow::onStatusZoomRequested);
   box_money_status->addWidget(_drawingarea_status);
   vbox_status->addLayout(box_money_status);
 
@@ -525,6 +828,10 @@ void MainWindow::showShipmentStatus() {
   menuitem_info_shipment_status_activate_cb(*this);
 }
 void MainWindow::showHistory() { menuitem_info_history_activate_cb(*this); }
+void MainWindow::showHistory(int item_idx, int city_idx) {
+  WindowHistory dlg(_gameState, item_idx, city_idx, this);
+  dlg.exec();
+}
 void MainWindow::showFlyAway() { window_main_button_flyaway_clicked_cb(*this); }
 void MainWindow::showAbout() { window_main_button_about_clicked_cb(*this); }
 void MainWindow::showDocs() { window_main_button_docs_clicked_cb(*this); }
@@ -557,6 +864,34 @@ void MainWindow::slotAbout() { showAbout(); }
 void MainWindow::slotDocs() { showDocs(); }
 void MainWindow::slotHighscores() { showHighscores(); }
 void MainWindow::slotNewGameQuit() { newGame(); }
+
+void MainWindow::onMarketItemSelectionChanged() {
+  if (!_treeview_market || !_drawingarea_status) return;
+  auto* item = _treeview_market->currentItem();
+  if (!item) return;
+  int drug_idx = item->data(COLUMN_NAME, Qt::UserRole).toInt();
+  if (drug_idx >= 0 && drug_idx < DRUG_NUM) {
+    _drawingarea_status->setItemIndex(HistoryChartView::ITEM_FIRST_DRUG +
+                                      drug_idx);
+    _drawingarea_status->updateChart(_gameState, _gameState.location);
+  }
+}
+
+void MainWindow::onPocketItemSelectionChanged() {
+  if (!_treeview_pocket || !_drawingarea_status) return;
+  auto* item = _treeview_pocket->currentItem();
+  if (!item) return;
+  int drug_idx = item->data(0, Qt::UserRole).toInt();
+  if (drug_idx >= 0 && drug_idx < DRUG_NUM) {
+    _drawingarea_status->setItemIndex(HistoryChartView::ITEM_FIRST_DRUG +
+                                      drug_idx);
+    _drawingarea_status->updateChart(_gameState, _gameState.location);
+  }
+}
+
+void MainWindow::onStatusZoomRequested(int item_idx, int city_idx) {
+  showHistory(item_idx, city_idx);
+}
 
 // WindowFinance Implementation
 
@@ -1373,27 +1708,40 @@ void WindowVault::_setupWidget() {
 
 WindowWorldDrugPrices::WindowWorldDrugPrices(const GameState& gameState,
                                              QWidget* parent)
-    : QDialog(parent), _gameState(gameState) {
+    : QDialog(parent),
+      _gameState(gameState),
+      _selectedDrug(0),
+      _selectedCity(gameState.location) {
   _setupWidget();
 }
 
 void WindowWorldDrugPrices::fillCityList(int drug_idx) {
+  _selectedDrug = std::clamp(drug_idx, 0, DRUG_NUM - 1);
   if (!_treeview_city) return;
   _treeview_city->clear();
   int day = _gameState.day;
+  QTreeWidgetItem* selectedItem = nullptr;
   for (int city_idx = 0; city_idx < CITY_NUM; ++city_idx) {
     QTreeWidgetItem* item = new QTreeWidgetItem(_treeview_city);
     std::string text = std::format("{}, {}", city_name(city_info[city_idx].id),
-                                   country_name(city_info[city_idx].country));
+                                    country_name(city_info[city_idx].country));
     item->setText(0, QString::fromStdString(text));
     item->setText(
         1, QString::number(_gameState.drug_table[drug_idx][city_idx][day].qty));
     item->setText(2,
                   QString::fromStdString(money_string(
                       _gameState.drug_table[drug_idx][city_idx][day].price)));
+    item->setData(0, Qt::UserRole, city_idx);
     item->setTextAlignment(1, Qt::AlignRight | Qt::AlignVCenter);
     item->setTextAlignment(2, Qt::AlignRight | Qt::AlignVCenter);
+    if (city_idx == _selectedCity) {
+      selectedItem = item;
+    }
   }
+  if (selectedItem) {
+    _treeview_city->setCurrentItem(selectedItem);
+  }
+  _updateChart();
 }
 
 void WindowWorldDrugPrices::onDrugItemClicked(QTreeWidgetItem* item,
@@ -1402,6 +1750,26 @@ void WindowWorldDrugPrices::onDrugItemClicked(QTreeWidgetItem* item,
   if (!item) return;
   int drug_idx = item->data(0, Qt::UserRole).toInt();
   fillCityList(drug_idx);
+}
+
+void WindowWorldDrugPrices::onCityItemClicked(QTreeWidgetItem* item,
+                                              int column) {
+  (void)column;
+  if (!item) return;
+  int city_idx = item->data(0, Qt::UserRole).toInt();
+  if (city_idx >= 0 && city_idx < CITY_NUM) {
+    _selectedCity = city_idx;
+    _updateChart();
+  }
+}
+
+void WindowWorldDrugPrices::_updateChart() {
+  if (_chart_view) {
+    _chart_view->setCityIndex(_selectedCity);
+    _chart_view->setItemIndex(HistoryChartView::ITEM_FIRST_DRUG +
+                              _selectedDrug);
+    _chart_view->updateChart(_gameState, _selectedCity);
+  }
 }
 
 void WindowWorldDrugPrices::_setupWidget() {
@@ -1425,6 +1793,9 @@ void WindowWorldDrugPrices::_setupWidget() {
     QTreeWidgetItem* item = new QTreeWidgetItem(_treeview_drug);
     item->setData(0, Qt::UserRole, i);
     item->setText(0, QString::fromStdString(drug_name(drug_info[i].id)));
+    if (i == _selectedDrug) {
+      _treeview_drug->setCurrentItem(item);
+    }
   }
   vbox_drug->addWidget(_treeview_drug);
   hbox_top->addWidget(frame_drug);
@@ -1439,6 +1810,14 @@ void WindowWorldDrugPrices::_setupWidget() {
 
   vbox_main->addLayout(hbox_top);
 
+  QGroupBox* frame_chart = new QGroupBox("Price History", this);
+  QVBoxLayout* vbox_chart = new QVBoxLayout(frame_chart);
+  vbox_chart->setContentsMargins(5, 5, 5, 5);
+  _chart_view = new HistoryChartView(false, frame_chart);
+  _chart_view->setFixedHeight(180);
+  vbox_chart->addWidget(_chart_view);
+  vbox_main->addWidget(frame_chart);
+
   QHBoxLayout* hbox_bottom = new QHBoxLayout();
   hbox_bottom->setSpacing(3);
   hbox_bottom->addStretch();
@@ -1451,6 +1830,8 @@ void WindowWorldDrugPrices::_setupWidget() {
 
   connect(_treeview_drug, &QTreeWidget::itemClicked, this,
           &WindowWorldDrugPrices::onDrugItemClicked);
+  connect(_treeview_city, &QTreeWidget::itemClicked, this,
+          &WindowWorldDrugPrices::onCityItemClicked);
 
   fillCityList(0);
   layout()->setSizeConstraint(QLayout::SetFixedSize);
@@ -1460,14 +1841,19 @@ void WindowWorldDrugPrices::_setupWidget() {
 
 WindowWorldCities::WindowWorldCities(const GameState& gameState,
                                      QWidget* parent)
-    : QDialog(parent), _gameState(gameState) {
+    : QDialog(parent),
+      _gameState(gameState),
+      _selectedCity(gameState.location),
+      _selectedDrug(0) {
   _setupWidget();
 }
 
 void WindowWorldCities::fillDrugList(int city_idx) {
+  _selectedCity = std::clamp(city_idx, 0, CITY_NUM - 1);
   if (!_treeview_drug) return;
   _treeview_drug->clear();
   int day = _gameState.day;
+  QTreeWidgetItem* selectedItem = nullptr;
   for (int drug_idx = 0; drug_idx < DRUG_NUM; ++drug_idx) {
     QTreeWidgetItem* item = new QTreeWidgetItem(_treeview_drug);
     std::string name_str = drug_name(drug_info[drug_idx].id);
@@ -1480,7 +1866,14 @@ void WindowWorldCities::fillDrugList(int city_idx) {
     item->setData(0, Qt::UserRole, drug_idx);
     item->setTextAlignment(1, Qt::AlignRight | Qt::AlignVCenter);
     item->setTextAlignment(2, Qt::AlignRight | Qt::AlignVCenter);
+    if (drug_idx == _selectedDrug) {
+      selectedItem = item;
+    }
   }
+  if (selectedItem) {
+    _treeview_drug->setCurrentItem(selectedItem);
+  }
+  _updateChart();
 }
 
 void WindowWorldCities::onCityItemClicked(QTreeWidgetItem* item, int column) {
@@ -1488,6 +1881,25 @@ void WindowWorldCities::onCityItemClicked(QTreeWidgetItem* item, int column) {
   if (!item) return;
   int city_idx = item->data(0, Qt::UserRole).toInt();
   fillDrugList(city_idx);
+}
+
+void WindowWorldCities::onDrugItemClicked(QTreeWidgetItem* item, int column) {
+  (void)column;
+  if (!item) return;
+  int drug_idx = item->data(0, Qt::UserRole).toInt();
+  if (drug_idx >= 0 && drug_idx < DRUG_NUM) {
+    _selectedDrug = drug_idx;
+    _updateChart();
+  }
+}
+
+void WindowWorldCities::_updateChart() {
+  if (_chart_view) {
+    _chart_view->setCityIndex(_selectedCity);
+    _chart_view->setItemIndex(HistoryChartView::ITEM_FIRST_DRUG +
+                              _selectedDrug);
+    _chart_view->updateChart(_gameState, _selectedCity);
+  }
 }
 
 void WindowWorldCities::_setupWidget() {
@@ -1511,11 +1923,14 @@ void WindowWorldCities::_setupWidget() {
     QTreeWidgetItem* item = new QTreeWidgetItem(_treeview_city);
     item->setData(0, Qt::UserRole, i);
     std::string text = std::format("{}, {}", city_name(city_info[i].id),
-                                   country_name(city_info[i].country));
+                                    country_name(city_info[i].country));
     if (i == _gameState.location) {
       text += " (Current)";
     }
     item->setText(0, QString::fromStdString(text));
+    if (i == _selectedCity) {
+      _treeview_city->setCurrentItem(item);
+    }
   }
   vbox_city->addWidget(_treeview_city);
   hbox_top->addWidget(frame_city);
@@ -1530,6 +1945,14 @@ void WindowWorldCities::_setupWidget() {
 
   vbox_main->addLayout(hbox_top);
 
+  QGroupBox* frame_chart = new QGroupBox("Price History", this);
+  QVBoxLayout* vbox_chart = new QVBoxLayout(frame_chart);
+  vbox_chart->setContentsMargins(5, 5, 5, 5);
+  _chart_view = new HistoryChartView(false, frame_chart);
+  _chart_view->setFixedHeight(180);
+  vbox_chart->addWidget(_chart_view);
+  vbox_main->addWidget(frame_chart);
+
   QHBoxLayout* hbox_bottom = new QHBoxLayout();
   hbox_bottom->setSpacing(3);
   hbox_bottom->addStretch();
@@ -1542,9 +1965,100 @@ void WindowWorldCities::_setupWidget() {
 
   connect(_treeview_city, &QTreeWidget::itemClicked, this,
           &WindowWorldCities::onCityItemClicked);
+  connect(_treeview_drug, &QTreeWidget::itemClicked, this,
+          &WindowWorldCities::onDrugItemClicked);
 
   fillDrugList(_gameState.location);
   layout()->setSizeConstraint(QLayout::SetFixedSize);
+}
+
+// WindowHistory Implementation
+
+WindowHistory::WindowHistory(const GameState& gameState, int initial_item,
+                             int initial_city, QWidget* parent)
+    : QDialog(parent), _gameState(gameState) {
+  int city = (initial_city >= 0 && initial_city < CITY_NUM)
+                 ? initial_city
+                 : _gameState.location;
+  int item = std::clamp(initial_item, 0, HistoryChartView::TOTAL_ITEMS - 1);
+  _setupWidget(item, city);
+  _refreshChart();
+}
+
+void WindowHistory::_setupWidget(int initial_item, int initial_city) {
+  setWindowTitle("Viewing History");
+  setModal(true);
+  setMinimumSize(620, 440);
+
+  QVBoxLayout* vbox_main = new QVBoxLayout(this);
+  vbox_main->setContentsMargins(8, 8, 8, 8);
+  vbox_main->setSpacing(6);
+
+  QHBoxLayout* hbox_controls = new QHBoxLayout();
+  hbox_controls->setSpacing(10);
+
+  hbox_controls->addWidget(new QLabel("City:", this));
+  _combo_city = new QComboBox(this);
+  for (int i = 0; i < CITY_NUM; ++i) {
+    std::string label = std::format("{}, {}", city_name(city_info[i].id),
+                                    country_name(city_info[i].country));
+    _combo_city->addItem(QString::fromStdString(label), i);
+  }
+  _combo_city->setCurrentIndex(initial_city);
+  hbox_controls->addWidget(_combo_city, 1);
+
+  hbox_controls->addWidget(new QLabel("Drug / Stat:", this));
+  _combo_item = new QComboBox(this);
+  for (int i = 0; i < HistoryChartView::TOTAL_ITEMS; ++i) {
+    _combo_item->addItem(HistoryChartView::itemName(i), i);
+  }
+  _combo_item->setCurrentIndex(initial_item);
+  hbox_controls->addWidget(_combo_item, 1);
+
+  vbox_main->addLayout(hbox_controls);
+
+  _chart_view = new HistoryChartView(false, this);
+  _chart_view->setMinimumSize(580, 320);
+  vbox_main->addWidget(_chart_view, 1);
+
+  _label_legend = new QLabel(
+      "The solid grey lines represent the normal range. The dotted grey line "
+      "represents the average value. Red squares indicate days traded.",
+      this);
+  _label_legend->setWordWrap(true);
+  vbox_main->addWidget(_label_legend);
+
+  QHBoxLayout* hbox_bottom = new QHBoxLayout();
+  hbox_bottom->addStretch();
+  _button_close = new QPushButton("&Close", this);
+  connect(_button_close, &QPushButton::clicked, this, &QDialog::accept);
+  hbox_bottom->addWidget(_button_close);
+  vbox_main->addLayout(hbox_bottom);
+
+  connect(_combo_city, &QComboBox::currentIndexChanged, this,
+          &WindowHistory::onCityChanged);
+  connect(_combo_item, &QComboBox::currentIndexChanged, this,
+          &WindowHistory::onItemChanged);
+}
+
+void WindowHistory::onCityChanged(int index) {
+  (void)index;
+  _refreshChart();
+}
+
+void WindowHistory::onItemChanged(int index) {
+  (void)index;
+  _refreshChart();
+}
+
+void WindowHistory::_refreshChart() {
+  if (!_chart_view || !_combo_city || !_combo_item) return;
+  int city_idx = _combo_city->currentData().toInt();
+  int item_idx = _combo_item->currentData().toInt();
+  _combo_city->setEnabled(item_idx >= HistoryChartView::ITEM_FIRST_DRUG);
+  _chart_view->setCityIndex(city_idx);
+  _chart_view->setItemIndex(item_idx);
+  _chart_view->updateChart(_gameState, city_idx);
 }
 
 // WindowInput Implementation

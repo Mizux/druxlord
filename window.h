@@ -1,12 +1,15 @@
 #pragma once
 
 #include <QCheckBox>
+#include <QComboBox>
+#include <QContextMenuEvent>
 #include <QDialog>
 #include <QGroupBox>
 #include <QKeySequence>
 #include <QLabel>
 #include <QListWidget>
 #include <QMenu>
+#include <QMouseEvent>
 #include <QProgressBar>
 #include <QPushButton>
 #include <QRadioButton>
@@ -17,6 +20,11 @@
 #include <QTextEdit>
 #include <QTreeWidget>
 #include <QWidget>
+#include <QtCharts/QChart>
+#include <QtCharts/QChartView>
+#include <QtCharts/QLineSeries>
+#include <QtCharts/QScatterSeries>
+#include <QtCharts/QValueAxis>
 
 #include "druxlord.h"
 
@@ -40,6 +48,58 @@ enum {
   COLUMN_INVENTORY_SELLFOR
 };
 
+class HistoryChartView : public QChartView {
+  Q_OBJECT
+
+ public:
+  static constexpr int ITEM_CASH = 0;
+  static constexpr int ITEM_DEBT = 1;
+  static constexpr int ITEM_HEALTH = 2;
+  static constexpr int ITEM_FIRST_DRUG = 3;
+  static constexpr int TOTAL_ITEMS = 3 + DRUG_NUM;
+
+  explicit HistoryChartView(bool compact = true, QWidget* parent = nullptr);
+  virtual ~HistoryChartView() = default;
+
+  HistoryChartView(const HistoryChartView&) = delete;
+  HistoryChartView& operator=(const HistoryChartView&) = delete;
+
+  int itemIndex() const { return _item_idx; }
+  void setItemIndex(int idx);
+
+  int cityIndex() const { return _city_idx; }
+  void setCityIndex(int idx);
+
+  void updateChart(const GameState& gameState, int city_idx = -1);
+
+  static QString itemName(int item_idx);
+
+ signals:
+  void itemChanged(int item_idx);
+  void zoomRequested(int item_idx, int city_idx);
+
+ protected:
+  void mousePressEvent(QMouseEvent* event) override;
+  void contextMenuEvent(QContextMenuEvent* event) override;
+
+ private:
+  void _setupChart();
+
+  bool _compact = true;
+  int _item_idx = ITEM_CASH;
+  int _city_idx = 0;
+
+  QChart* _chart = nullptr;
+  QValueAxis* _axis_x = nullptr;
+  QValueAxis* _axis_y = nullptr;
+  QLineSeries* _series_min = nullptr;
+  QLineSeries* _series_max = nullptr;
+  QLineSeries* _series_avg = nullptr;
+  QLineSeries* _series_data = nullptr;
+  QScatterSeries* _series_points = nullptr;
+  QScatterSeries* _series_traded = nullptr;
+};
+
 class MainWindow : public QWidget {
   Q_OBJECT
 
@@ -59,6 +119,7 @@ class MainWindow : public QWidget {
   QTreeWidget* treeviewMarket() const { return _treeview_market; }
   QTreeWidget* treeviewPocket() const { return _treeview_pocket; }
   QTextEdit* textviewInformation() const { return _textview_information; }
+  HistoryChartView* statusChartView() const { return _drawingarea_status; }
 
   // Controlling other views
   void showFinance();
@@ -71,6 +132,7 @@ class MainWindow : public QWidget {
   void showVaultsInfo();
   void showShipmentStatus();
   void showHistory();
+  void showHistory(int item_idx, int city_idx);
   void showFlyAway();
   void showAbout();
   void showDocs();
@@ -104,6 +166,9 @@ class MainWindow : public QWidget {
   void slotDocs();
   void slotHighscores();
   void slotNewGameQuit();
+  void onMarketItemSelectionChanged();
+  void onPocketItemSelectionChanged();
+  void onStatusZoomRequested(int item_idx, int city_idx);
 
  private:
   void _setupWidget();
@@ -148,7 +213,7 @@ class MainWindow : public QWidget {
   QLabel* _label_bank = nullptr;
   QLabel* _label_debt = nullptr;
   QProgressBar* _progressbar_health = nullptr;
-  QWidget* _drawingarea_status = nullptr;
+  HistoryChartView* _drawingarea_status = nullptr;
   QShortcut* _shortcut_quit = nullptr;
 };
 
@@ -314,14 +379,19 @@ class WindowWorldDrugPrices : public QDialog {
 
  public slots:
   void onDrugItemClicked(QTreeWidgetItem* item, int column);
+  void onCityItemClicked(QTreeWidgetItem* item, int column);
 
  private:
   void _setupWidget();
+  void _updateChart();
 
   const GameState& _gameState;
+  int _selectedDrug = 0;
+  int _selectedCity = 0;
 
   QTreeWidget* _treeview_drug = nullptr;
   QTreeWidget* _treeview_city = nullptr;
+  HistoryChartView* _chart_view = nullptr;
   QPushButton* _button_close = nullptr;
 };
 
@@ -342,18 +412,53 @@ class WindowWorldCities : public QDialog {
 
  public slots:
   void onCityItemClicked(QTreeWidgetItem* item, int column);
+  void onDrugItemClicked(QTreeWidgetItem* item, int column);
 
  private:
   void _setupWidget();
+  void _updateChart();
 
   const GameState& _gameState;
+  int _selectedCity = 0;
+  int _selectedDrug = 0;
 
   QTreeWidget* _treeview_city = nullptr;
   QTreeWidget* _treeview_drug = nullptr;
+  HistoryChartView* _chart_view = nullptr;
   QPushButton* _button_close = nullptr;
 };
 
 using WorldCitiesDialog = WindowWorldCities;
+
+class WindowHistory : public QDialog {
+  Q_OBJECT
+
+ public:
+  explicit WindowHistory(const GameState& gameState, int initial_item = 0,
+                         int initial_city = -1, QWidget* parent = nullptr);
+  virtual ~WindowHistory() = default;
+
+  WindowHistory(const WindowHistory&) = delete;
+  WindowHistory& operator=(const WindowHistory&) = delete;
+
+ public slots:
+  void onCityChanged(int index);
+  void onItemChanged(int index);
+
+ private:
+  void _setupWidget(int initial_item, int initial_city);
+  void _refreshChart();
+
+  const GameState& _gameState;
+
+  QComboBox* _combo_city = nullptr;
+  QComboBox* _combo_item = nullptr;
+  HistoryChartView* _chart_view = nullptr;
+  QLabel* _label_legend = nullptr;
+  QPushButton* _button_close = nullptr;
+};
+
+using HistoryDialog = WindowHistory;
 
 class WindowInput : public QDialog {
   Q_OBJECT
