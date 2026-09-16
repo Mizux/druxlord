@@ -378,8 +378,8 @@ class WindowWorldDrugPrices : public QDialog {
   void fillCityList(int drug_idx);
 
  public slots:
-  void onDrugItemClicked(QTreeWidgetItem* item, int column);
-  void onCityItemClicked(QTreeWidgetItem* item, int column);
+  void onDrugItemSelectionChanged();
+  void onCityItemSelectionChanged();
 
  private:
   void _setupWidget();
@@ -411,8 +411,8 @@ class WindowWorldCities : public QDialog {
   void fillDrugList(int city_idx);
 
  public slots:
-  void onCityItemClicked(QTreeWidgetItem* item, int column);
-  void onDrugItemClicked(QTreeWidgetItem* item, int column);
+  void onCityItemSelectionChanged();
+  void onDrugItemSelectionChanged();
 
  private:
   void _setupWidget();

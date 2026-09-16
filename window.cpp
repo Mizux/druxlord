@@ -1748,17 +1748,17 @@ void WindowWorldDrugPrices::fillCityList(int drug_idx) {
   _updateChart();
 }
 
-void WindowWorldDrugPrices::onDrugItemClicked(QTreeWidgetItem* item,
-                                              int column) {
-  (void)column;
+void WindowWorldDrugPrices::onDrugItemSelectionChanged() {
+  if (!_treeview_drug) return;
+  auto* item = _treeview_drug->currentItem();
   if (!item) return;
   int drug_idx = item->data(0, Qt::UserRole).toInt();
   fillCityList(drug_idx);
 }
 
-void WindowWorldDrugPrices::onCityItemClicked(QTreeWidgetItem* item,
-                                              int column) {
-  (void)column;
+void WindowWorldDrugPrices::onCityItemSelectionChanged() {
+  if (!_treeview_city) return;
+  auto* item = _treeview_city->currentItem();
   if (!item) return;
   int city_idx = item->data(0, Qt::UserRole).toInt();
   if (city_idx >= 0 && city_idx < static_cast<int>(city_info.size())) {
@@ -1832,10 +1832,15 @@ void WindowWorldDrugPrices::_setupWidget() {
 
   vbox_main->addLayout(hbox_bottom);
 
+  connect(_treeview_drug, &QTreeWidget::itemSelectionChanged, this,
+          &WindowWorldDrugPrices::onDrugItemSelectionChanged);
   connect(_treeview_drug, &QTreeWidget::itemClicked, this,
-          &WindowWorldDrugPrices::onDrugItemClicked);
+          [this](QTreeWidgetItem*, int) { onDrugItemSelectionChanged(); });
+
+  connect(_treeview_city, &QTreeWidget::itemSelectionChanged, this,
+          &WindowWorldDrugPrices::onCityItemSelectionChanged);
   connect(_treeview_city, &QTreeWidget::itemClicked, this,
-          &WindowWorldDrugPrices::onCityItemClicked);
+          [this](QTreeWidgetItem*, int) { onCityItemSelectionChanged(); });
 
   fillCityList(0);
   layout()->setSizeConstraint(QLayout::SetFixedSize);
@@ -1881,15 +1886,17 @@ void WindowWorldCities::fillDrugList(int city_idx) {
   _updateChart();
 }
 
-void WindowWorldCities::onCityItemClicked(QTreeWidgetItem* item, int column) {
-  (void)column;
+void WindowWorldCities::onCityItemSelectionChanged() {
+  if (!_treeview_city) return;
+  auto* item = _treeview_city->currentItem();
   if (!item) return;
   int city_idx = item->data(0, Qt::UserRole).toInt();
   fillDrugList(city_idx);
 }
 
-void WindowWorldCities::onDrugItemClicked(QTreeWidgetItem* item, int column) {
-  (void)column;
+void WindowWorldCities::onDrugItemSelectionChanged() {
+  if (!_treeview_drug) return;
+  auto* item = _treeview_drug->currentItem();
   if (!item) return;
   int drug_idx = item->data(0, Qt::UserRole).toInt();
   if (drug_idx >= 0 && drug_idx < static_cast<int>(drug_info.size())) {
@@ -1968,10 +1975,15 @@ void WindowWorldCities::_setupWidget() {
 
   vbox_main->addLayout(hbox_bottom);
 
+  connect(_treeview_city, &QTreeWidget::itemSelectionChanged, this,
+      &WindowWorldCities::onCityItemSelectionChanged);
   connect(_treeview_city, &QTreeWidget::itemClicked, this,
-          &WindowWorldCities::onCityItemClicked);
+      [this](QTreeWidgetItem*, int) { onCityItemSelectionChanged(); });
+
+  connect(_treeview_drug, &QTreeWidget::itemSelectionChanged, this,
+      &WindowWorldCities::onDrugItemSelectionChanged);
   connect(_treeview_drug, &QTreeWidget::itemClicked, this,
-          &WindowWorldCities::onDrugItemClicked);
+      [this](QTreeWidgetItem*, int) { onDrugItemSelectionChanged(); });
 
   fillDrugList(_gameState.location);
   layout()->setSizeConstraint(QLayout::SetFixedSize);
