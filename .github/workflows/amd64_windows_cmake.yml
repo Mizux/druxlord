@@ -24,6 +24,8 @@ jobs:
     steps:
       - name: Install Qt
         uses: jurplel/install-qt-action@v4
+        with:
+          modules: 'qtcharts'
       - uses: actions/checkout@v7
       - name: Check CMake
         run: |
