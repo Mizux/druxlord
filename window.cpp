@@ -2207,7 +2207,7 @@ void WindowFlyAway::_populateCityList() {
   int first_valid = -1;
 
   for (size_t i = 0; i < city_info.size(); ++i) {
-    int cost = flight_cost(_gameState.location, static_cast<int>(i));
+    int cost = _gameState.flight_cost(city_info[i].id);
     bool is_current = (static_cast<int>(i) == _gameState.location);
     bool can_afford = (_gameState.cash >= cost);
 

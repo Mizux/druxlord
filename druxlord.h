@@ -258,7 +258,7 @@ inline constexpr std::array city_info = {
 std::string drug_name(DrugType type);
 std::string city_name(CityType type);
 std::string country_name(CountryType type);
-int flight_cost(int from_city, int to_city);
+int flight_cost(CityType from_city, CityType to_city);
 
 class GameState {
  public:
@@ -271,7 +271,7 @@ class GameState {
   void generate_rumors();
   void record_daily_history();
   std::string get_market_news(int loc, int d) const;
-  int flight_cost(int to_city) const;
+  int flight_cost(CityType to_city) const;
 
   Encounter check_random_encounter();
 

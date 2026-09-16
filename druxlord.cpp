@@ -102,16 +102,17 @@ std::string country_name(CountryType type) {
   return "Unknown";
 }
 
-int flight_cost(int from_city, int to_city) {
-  if (from_city < 0 || from_city >= static_cast<int>(city_info.size()) ||
-      to_city < 0 || to_city >= static_cast<int>(city_info.size())) {
+int flight_cost(CityType from_city, CityType to_city) {
+  auto from_idx = static_cast<size_t>(from_city);
+  auto to_idx = static_cast<size_t>(to_city);
+  if (from_idx >= city_info.size() || to_idx >= city_info.size()) {
     return 0;
   }
-  return std::abs(city_info[from_city].distance - city_info[to_city].distance);
+  return std::abs(city_info[from_idx].distance - city_info[to_idx].distance);
 }
 
-int GameState::flight_cost(int to_city) const {
-  return ::flight_cost(location, to_city);
+int GameState::flight_cost(CityType to_city) const {
+  return ::flight_cost(city_info[location].id, to_city);
 }
 
 std::string money_string(unsigned int value) {
