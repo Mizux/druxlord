@@ -237,7 +237,7 @@ QString HistoryChartView::itemName(int item_idx) {
       return "Your Health";
     default: {
       int drug_idx = item_idx - ITEM_FIRST_DRUG;
-      if (drug_idx >= 0 && drug_idx < DRUG_NUM) {
+      if (drug_idx >= 0 && drug_idx < static_cast<int>(drug_info.size())) {
         return QString::fromStdString(drug_name(drug_info[drug_idx].id));
       }
       return "Unknown";
@@ -254,15 +254,15 @@ void HistoryChartView::setItemIndex(int idx) {
 }
 
 void HistoryChartView::setCityIndex(int idx) {
-  if (idx >= 0 && idx < CITY_NUM) {
+  if (idx >= 0 && idx < static_cast<int>(city_info.size())) {
     _city_idx = idx;
   }
 }
 
 void HistoryChartView::updateChart(const GameState& gameState, int city_idx) {
-  if (city_idx >= 0 && city_idx < CITY_NUM) {
+  if (city_idx >= 0 && city_idx < static_cast<int>(city_info.size())) {
     _city_idx = city_idx;
-  } else if (_city_idx < 0 || _city_idx >= CITY_NUM) {
+  } else if (_city_idx < 0 || _city_idx >= static_cast<int>(city_info.size())) {
     _city_idx = gameState.location;
   }
 
@@ -297,16 +297,16 @@ void HistoryChartView::updateChart(const GameState& gameState, int city_idx) {
 
   if (_item_idx == ITEM_CASH) {
     for (int d = 0; d <= max_day; ++d) {
-      double v = (d == gameState.day) ? gameState.cash
-                                      : gameState.cash_history[d];
+      double v =
+          (d == gameState.day) ? gameState.cash : gameState.cash_history[d];
       _series_data->append(d + 1, v);
       _series_points->append(d + 1, v);
       record_val(v);
     }
   } else if (_item_idx == ITEM_DEBT) {
     for (int d = 0; d <= max_day; ++d) {
-      double v = (d == gameState.day) ? gameState.debt
-                                      : gameState.debt_history[d];
+      double v =
+          (d == gameState.day) ? gameState.debt : gameState.debt_history[d];
       _series_data->append(d + 1, v);
       _series_points->append(d + 1, v);
       record_val(v);
@@ -319,14 +319,15 @@ void HistoryChartView::updateChart(const GameState& gameState, int city_idx) {
     record_val(0);
     record_val(100);
     for (int d = 0; d <= max_day; ++d) {
-      double v = (d == gameState.day) ? gameState.health
-                                      : gameState.health_history[d];
+      double v =
+          (d == gameState.day) ? gameState.health : gameState.health_history[d];
       _series_data->append(d + 1, v);
       _series_points->append(d + 1, v);
       record_val(v);
     }
   } else {
-    int drug_idx = std::clamp(_item_idx - ITEM_FIRST_DRUG, 0, DRUG_NUM - 1);
+    int drug_idx = std::clamp(_item_idx - ITEM_FIRST_DRUG, 0,
+                              static_cast<int>(drug_info.size()) - 1);
     int base_price = drug_info[drug_idx].price;
     int city_factor = city_info[_city_idx].price_factor;
     int mean = (base_price * city_factor) / 100;
@@ -437,7 +438,7 @@ void MainWindow::_fillTreeviewMarket() {
   int loc = _gameState.location;
   int day = _gameState.day;
 
-  for (int drug_idx = 0; drug_idx < DRUG_NUM; ++drug_idx) {
+  for (size_t drug_idx = 0; drug_idx < drug_info.size(); ++drug_idx) {
     if (_gameState.drug_table[drug_idx][loc][day].available) {
       std::string price_str =
           money_string(_gameState.drug_table[drug_idx][loc][day].price);
@@ -453,7 +454,7 @@ void MainWindow::_fillTreeviewMarket() {
           COLUMN_QTY,
           QString::number(_gameState.drug_table[drug_idx][loc][day].qty));
       item->setText(COLUMN_PRICE, QString::fromStdString(price_str));
-      item->setData(COLUMN_NAME, Qt::UserRole, drug_idx);
+      item->setData(COLUMN_NAME, Qt::UserRole, static_cast<int>(drug_idx));
       item->setTextAlignment(COLUMN_QTY, Qt::AlignRight | Qt::AlignVCenter);
       item->setTextAlignment(COLUMN_PRICE, Qt::AlignRight | Qt::AlignVCenter);
     }
@@ -464,7 +465,7 @@ void MainWindow::_fillTreeviewPocket() {
   if (!_treeview_pocket) return;
   _treeview_pocket->clear();
 
-  for (int drug_idx = 0; drug_idx < DRUG_NUM; ++drug_idx) {
+  for (size_t drug_idx = 0; drug_idx < drug_info.size(); ++drug_idx) {
     if (_gameState.player_qty[drug_idx] > 0) {
       QTreeWidgetItem* item = new QTreeWidgetItem(_treeview_pocket);
       std::string name_str = drug_name(drug_info[drug_idx].id);
@@ -472,7 +473,7 @@ void MainWindow::_fillTreeviewPocket() {
       item->setText(1, QString::number(_gameState.player_qty[drug_idx]));
       item->setText(2, QString::fromStdString(
                            money_string(_gameState.player_price[drug_idx])));
-      item->setData(0, Qt::UserRole, drug_idx);
+      item->setData(0, Qt::UserRole, static_cast<int>(drug_idx));
       item->setTextAlignment(1, Qt::AlignRight | Qt::AlignVCenter);
       item->setTextAlignment(2, Qt::AlignRight | Qt::AlignVCenter);
     }
@@ -497,7 +498,7 @@ void MainWindow::_setLabelHealth(int health) {
 
 void MainWindow::_setLabelLocation(int location) {
   std::string loc_str;
-  if (location >= 0 && location < CITY_NUM) {
+  if (location >= 0 && location < static_cast<int>(city_info.size())) {
     loc_str = std::format("{}, {}", city_name(city_info[location].id),
                           country_name(city_info[location].country));
   } else {
@@ -517,10 +518,12 @@ void MainWindow::_setLabelDay(int day) {
 }
 
 void MainWindow::_setLabelRank(int rank) {
-  constexpr std::array<const char*, RANK_NUM> rank_str = {
-      "wannabe",         "small time operator", "dealer",
-      "big time dealer", "distributor",         "drug lord"};
-  const char* r = (rank >= 0 && rank < RANK_NUM) ? rank_str[rank] : "wannabe";
+  constexpr std::array rank_str = {"wannabe",     "small time operator",
+                                   "dealer",      "big time dealer",
+                                   "distributor", "drug lord"};
+  const char* r = (rank >= 0 && rank < static_cast<int>(rank_str.size()))
+                      ? rank_str[rank]
+                      : "wannabe";
   auto markup = std::format("<span><b>{}</b></span>", r);
   if (_label_rank) {
     _label_rank->setText(QString::fromStdString(markup));
@@ -870,7 +873,7 @@ void MainWindow::onMarketItemSelectionChanged() {
   auto* item = _treeview_market->currentItem();
   if (!item) return;
   int drug_idx = item->data(COLUMN_NAME, Qt::UserRole).toInt();
-  if (drug_idx >= 0 && drug_idx < DRUG_NUM) {
+  if (drug_idx >= 0 && drug_idx < static_cast<int>(drug_info.size())) {
     _drawingarea_status->setItemIndex(HistoryChartView::ITEM_FIRST_DRUG +
                                       drug_idx);
     _drawingarea_status->updateChart(_gameState, _gameState.location);
@@ -882,7 +885,7 @@ void MainWindow::onPocketItemSelectionChanged() {
   auto* item = _treeview_pocket->currentItem();
   if (!item) return;
   int drug_idx = item->data(0, Qt::UserRole).toInt();
-  if (drug_idx >= 0 && drug_idx < DRUG_NUM) {
+  if (drug_idx >= 0 && drug_idx < static_cast<int>(drug_info.size())) {
     _drawingarea_status->setItemIndex(HistoryChartView::ITEM_FIRST_DRUG +
                                       drug_idx);
     _drawingarea_status->updateChart(_gameState, _gameState.location);
@@ -1111,7 +1114,7 @@ void WindowShopping::updateShopping() {
   }
   if (_treeview_store) {
     _treeview_store->clear();
-    for (int i = 0; i < SHOP_ITEM_NUM; ++i) {
+    for (size_t i = 0; i < shop_items.size(); ++i) {
       if (!shop_items[i].name.empty()) {
         QTreeWidgetItem* item = new QTreeWidgetItem(_treeview_store);
         item->setText(COLUMN_STORE_NAME,
@@ -1130,7 +1133,7 @@ void WindowShopping::updateShopping() {
                                Qt::AlignCenter | Qt::AlignVCenter);
         item->setTextAlignment(COLUMN_STORE_PRICE,
                                Qt::AlignRight | Qt::AlignVCenter);
-        item->setData(0, Qt::UserRole, i);
+        item->setData(0, Qt::UserRole, static_cast<int>(i));
         item->setData(0, Qt::UserRole + 1, false);
       }
       if (!shop_items[i].ammo_name.empty()) {
@@ -1147,14 +1150,14 @@ void WindowShopping::updateShopping() {
                                Qt::AlignCenter | Qt::AlignVCenter);
         item->setTextAlignment(COLUMN_STORE_PRICE,
                                Qt::AlignRight | Qt::AlignVCenter);
-        item->setData(0, Qt::UserRole, i);
+        item->setData(0, Qt::UserRole, static_cast<int>(i));
         item->setData(0, Qt::UserRole + 1, true);
       }
     }
   }
   if (_treeview_inventory) {
     _treeview_inventory->clear();
-    for (int i = 0; i < SHOP_ITEM_NUM; ++i) {
+    for (size_t i = 0; i < shop_items.size(); ++i) {
       if (_gameState.weapon_qty[i] > 0) {
         QTreeWidgetItem* item = new QTreeWidgetItem(_treeview_inventory);
         item->setText(COLUMN_INVENTORY_NAME,
@@ -1177,7 +1180,7 @@ void WindowShopping::updateShopping() {
                                Qt::AlignRight | Qt::AlignVCenter);
         item->setTextAlignment(COLUMN_INVENTORY_SELLFOR,
                                Qt::AlignRight | Qt::AlignVCenter);
-        item->setData(0, Qt::UserRole, i);
+        item->setData(0, Qt::UserRole, static_cast<int>(i));
         item->setData(0, Qt::UserRole + 1, false);
       }
       if (_gameState.ammo_qty[i] > 0) {
@@ -1198,7 +1201,7 @@ void WindowShopping::updateShopping() {
                                Qt::AlignRight | Qt::AlignVCenter);
         item->setTextAlignment(COLUMN_INVENTORY_SELLFOR,
                                Qt::AlignRight | Qt::AlignVCenter);
-        item->setData(0, Qt::UserRole, i);
+        item->setData(0, Qt::UserRole, static_cast<int>(i));
         item->setData(0, Qt::UserRole + 1, true);
       }
     }
@@ -1577,27 +1580,27 @@ void WindowVault::updateVaultLists() {
   }
   if (_treeview_pocket) {
     _treeview_pocket->clear();
-    for (int i = 0; i < DRUG_NUM; ++i) {
+    for (size_t i = 0; i < drug_info.size(); ++i) {
       if (_gameState.player_qty[i] > 0) {
         QTreeWidgetItem* item = new QTreeWidgetItem(_treeview_pocket);
         item->setText(0, QString::fromStdString(drug_name(drug_info[i].id)));
         item->setText(1, QString::number(_gameState.player_qty[i]));
         item->setText(2, QString::fromStdString(
                              money_string(_gameState.player_price[i])));
-        item->setData(0, Qt::UserRole, i);
+        item->setData(0, Qt::UserRole, static_cast<int>(i));
       }
     }
   }
   if (_treeview_vault) {
     _treeview_vault->clear();
-    for (int i = 0; i < DRUG_NUM; ++i) {
+    for (size_t i = 0; i < drug_info.size(); ++i) {
       if (_gameState.vault_qty[i] > 0) {
         QTreeWidgetItem* item = new QTreeWidgetItem(_treeview_vault);
         item->setText(0, QString::fromStdString(drug_name(drug_info[i].id)));
         item->setText(1, QString::number(_gameState.vault_qty[i]));
         item->setText(2, QString::fromStdString(
                              money_string(_gameState.player_price[i])));
-        item->setData(0, Qt::UserRole, i);
+        item->setData(0, Qt::UserRole, static_cast<int>(i));
       }
     }
   }
@@ -1608,7 +1611,7 @@ void WindowVault::onIntoVaultClicked() {
   auto* item = _treeview_pocket->currentItem();
   if (!item) return;
   int drug_idx = item->data(0, Qt::UserRole).toInt();
-  if (drug_idx >= 0 && drug_idx < DRUG_NUM &&
+  if (drug_idx >= 0 && drug_idx < static_cast<int>(drug_info.size()) &&
       _gameState.player_qty[drug_idx] > 0) {
     _gameState.player_qty[drug_idx] -= 1;
     _gameState.pocket -= 1;
@@ -1623,7 +1626,7 @@ void WindowVault::onFromVaultClicked() {
   auto* item = _treeview_vault->currentItem();
   if (!item) return;
   int drug_idx = item->data(0, Qt::UserRole).toInt();
-  if (drug_idx >= 0 && drug_idx < DRUG_NUM &&
+  if (drug_idx >= 0 && drug_idx < static_cast<int>(drug_info.size()) &&
       _gameState.vault_qty[drug_idx] > 0) {
     if (_gameState.pocket < _gameState.pocket_capacity) {
       _gameState.vault_qty[drug_idx] -= 1;
@@ -1716,25 +1719,26 @@ WindowWorldDrugPrices::WindowWorldDrugPrices(const GameState& gameState,
 }
 
 void WindowWorldDrugPrices::fillCityList(int drug_idx) {
-  _selectedDrug = std::clamp(drug_idx, 0, DRUG_NUM - 1);
+  _selectedDrug =
+      std::clamp(drug_idx, 0, static_cast<int>(drug_info.size()) - 1);
   if (!_treeview_city) return;
   _treeview_city->clear();
   int day = _gameState.day;
   QTreeWidgetItem* selectedItem = nullptr;
-  for (int city_idx = 0; city_idx < CITY_NUM; ++city_idx) {
+  for (size_t city_idx = 0; city_idx < city_info.size(); ++city_idx) {
     QTreeWidgetItem* item = new QTreeWidgetItem(_treeview_city);
     std::string text = std::format("{}, {}", city_name(city_info[city_idx].id),
-                                    country_name(city_info[city_idx].country));
+                                   country_name(city_info[city_idx].country));
     item->setText(0, QString::fromStdString(text));
     item->setText(
         1, QString::number(_gameState.drug_table[drug_idx][city_idx][day].qty));
     item->setText(2,
                   QString::fromStdString(money_string(
                       _gameState.drug_table[drug_idx][city_idx][day].price)));
-    item->setData(0, Qt::UserRole, city_idx);
+    item->setData(0, Qt::UserRole, static_cast<int>(city_idx));
     item->setTextAlignment(1, Qt::AlignRight | Qt::AlignVCenter);
     item->setTextAlignment(2, Qt::AlignRight | Qt::AlignVCenter);
-    if (city_idx == _selectedCity) {
+    if (static_cast<int>(city_idx) == _selectedCity) {
       selectedItem = item;
     }
   }
@@ -1757,7 +1761,7 @@ void WindowWorldDrugPrices::onCityItemClicked(QTreeWidgetItem* item,
   (void)column;
   if (!item) return;
   int city_idx = item->data(0, Qt::UserRole).toInt();
-  if (city_idx >= 0 && city_idx < CITY_NUM) {
+  if (city_idx >= 0 && city_idx < static_cast<int>(city_info.size())) {
     _selectedCity = city_idx;
     _updateChart();
   }
@@ -1789,11 +1793,11 @@ void WindowWorldDrugPrices::_setupWidget() {
   _treeview_drug = create_treeview_drug_names();
   _treeview_drug->setFixedHeight(210);
   _treeview_drug->clear();
-  for (int i = 0; i < DRUG_NUM; ++i) {
+  for (size_t i = 0; i < drug_info.size(); ++i) {
     QTreeWidgetItem* item = new QTreeWidgetItem(_treeview_drug);
-    item->setData(0, Qt::UserRole, i);
+    item->setData(0, Qt::UserRole, static_cast<int>(i));
     item->setText(0, QString::fromStdString(drug_name(drug_info[i].id)));
-    if (i == _selectedDrug) {
+    if (static_cast<int>(i) == _selectedDrug) {
       _treeview_drug->setCurrentItem(item);
     }
   }
@@ -1849,12 +1853,13 @@ WindowWorldCities::WindowWorldCities(const GameState& gameState,
 }
 
 void WindowWorldCities::fillDrugList(int city_idx) {
-  _selectedCity = std::clamp(city_idx, 0, CITY_NUM - 1);
+  _selectedCity =
+      std::clamp(city_idx, 0, static_cast<int>(city_info.size()) - 1);
   if (!_treeview_drug) return;
   _treeview_drug->clear();
   int day = _gameState.day;
   QTreeWidgetItem* selectedItem = nullptr;
-  for (int drug_idx = 0; drug_idx < DRUG_NUM; ++drug_idx) {
+  for (size_t drug_idx = 0; drug_idx < drug_info.size(); ++drug_idx) {
     QTreeWidgetItem* item = new QTreeWidgetItem(_treeview_drug);
     std::string name_str = drug_name(drug_info[drug_idx].id);
     item->setText(0, QString::fromStdString(name_str));
@@ -1863,10 +1868,10 @@ void WindowWorldCities::fillDrugList(int city_idx) {
     item->setText(2,
                   QString::fromStdString(money_string(
                       _gameState.drug_table[drug_idx][city_idx][day].price)));
-    item->setData(0, Qt::UserRole, drug_idx);
+    item->setData(0, Qt::UserRole, static_cast<int>(drug_idx));
     item->setTextAlignment(1, Qt::AlignRight | Qt::AlignVCenter);
     item->setTextAlignment(2, Qt::AlignRight | Qt::AlignVCenter);
-    if (drug_idx == _selectedDrug) {
+    if (static_cast<int>(drug_idx) == _selectedDrug) {
       selectedItem = item;
     }
   }
@@ -1887,7 +1892,7 @@ void WindowWorldCities::onDrugItemClicked(QTreeWidgetItem* item, int column) {
   (void)column;
   if (!item) return;
   int drug_idx = item->data(0, Qt::UserRole).toInt();
-  if (drug_idx >= 0 && drug_idx < DRUG_NUM) {
+  if (drug_idx >= 0 && drug_idx < static_cast<int>(drug_info.size())) {
     _selectedDrug = drug_idx;
     _updateChart();
   }
@@ -1919,16 +1924,16 @@ void WindowWorldCities::_setupWidget() {
   _treeview_city = create_treeview_city_names();
   _treeview_city->setFixedHeight(210);
   _treeview_city->clear();
-  for (int i = 0; i < CITY_NUM; ++i) {
+  for (size_t i = 0; i < city_info.size(); ++i) {
     QTreeWidgetItem* item = new QTreeWidgetItem(_treeview_city);
-    item->setData(0, Qt::UserRole, i);
+    item->setData(0, Qt::UserRole, static_cast<int>(i));
     std::string text = std::format("{}, {}", city_name(city_info[i].id),
-                                    country_name(city_info[i].country));
-    if (i == _gameState.location) {
+                                   country_name(city_info[i].country));
+    if (static_cast<int>(i) == _gameState.location) {
       text += " (Current)";
     }
     item->setText(0, QString::fromStdString(text));
-    if (i == _selectedCity) {
+    if (static_cast<int>(i) == _selectedCity) {
       _treeview_city->setCurrentItem(item);
     }
   }
@@ -1977,9 +1982,10 @@ void WindowWorldCities::_setupWidget() {
 WindowHistory::WindowHistory(const GameState& gameState, int initial_item,
                              int initial_city, QWidget* parent)
     : QDialog(parent), _gameState(gameState) {
-  int city = (initial_city >= 0 && initial_city < CITY_NUM)
-                 ? initial_city
-                 : _gameState.location;
+  int city =
+      (initial_city >= 0 && initial_city < static_cast<int>(city_info.size()))
+          ? initial_city
+          : _gameState.location;
   int item = std::clamp(initial_item, 0, HistoryChartView::TOTAL_ITEMS - 1);
   _setupWidget(item, city);
   _refreshChart();
@@ -1999,10 +2005,10 @@ void WindowHistory::_setupWidget(int initial_item, int initial_city) {
 
   hbox_controls->addWidget(new QLabel("City:", this));
   _combo_city = new QComboBox(this);
-  for (int i = 0; i < CITY_NUM; ++i) {
+  for (size_t i = 0; i < city_info.size(); ++i) {
     std::string label = std::format("{}, {}", city_name(city_info[i].id),
                                     country_name(city_info[i].country));
-    _combo_city->addItem(QString::fromStdString(label), i);
+    _combo_city->addItem(QString::fromStdString(label), static_cast<int>(i));
   }
   _combo_city->setCurrentIndex(initial_city);
   hbox_controls->addWidget(_combo_city, 1);
@@ -2200,9 +2206,9 @@ void WindowFlyAway::_populateCityList() {
   _city_list->clear();
   int first_valid = -1;
 
-  for (int i = 0; i < CITY_NUM; ++i) {
-    int cost = flight_cost(_gameState.location, i);
-    bool is_current = (i == _gameState.location);
+  for (size_t i = 0; i < city_info.size(); ++i) {
+    int cost = flight_cost(_gameState.location, static_cast<int>(i));
+    bool is_current = (static_cast<int>(i) == _gameState.location);
     bool can_afford = (_gameState.cash >= cost);
 
     std::string text;
@@ -2217,7 +2223,7 @@ void WindowFlyAway::_populateCityList() {
 
     QListWidgetItem* item =
         new QListWidgetItem(QString::fromStdString(text), _city_list);
-    item->setData(Qt::UserRole, i);
+    item->setData(Qt::UserRole, static_cast<int>(i));
     item->setData(Qt::UserRole + 1, cost);
 
     if (is_current) {
@@ -2230,7 +2236,7 @@ void WindowFlyAway::_populateCityList() {
       item->setToolTip("Too expensive: insufficient funds");
     } else {
       if (first_valid == -1) {
-        first_valid = i;
+        first_valid = static_cast<int>(i);
       }
     }
   }
@@ -2257,7 +2263,8 @@ void WindowFlyAway::onFlyClicked() {
   if (!item || !(item->flags() & Qt::ItemIsEnabled)) return;
   int dest = item->data(Qt::UserRole).toInt();
   int cost = item->data(Qt::UserRole + 1).toInt();
-  if (dest >= 0 && dest < CITY_NUM && dest != _gameState.location) {
+  if (dest >= 0 && dest < static_cast<int>(city_info.size()) &&
+      dest != _gameState.location) {
     if (_gameState.cash >= cost) {
       _gameState.cash -= cost;
       _gameState.location = dest;
@@ -2648,7 +2655,7 @@ void WindowCombat::onSurrenderClicked() {
         (_enemyIdx <= 1 || _enemyIdx == 4 || _enemyIdx == 8 || _enemyIdx == 9);
     if (is_cops) {
       if (_gameState.total_drugs() > 0) {
-        for (int i = 0; i < DRUG_NUM; ++i) _gameState.player_qty[i] = 0;
+        _gameState.player_qty.fill(0);
         _gameState.pocket = 0;
         _textLog->append(
             "They accept your surrender. They seize all your drugs! They "
@@ -2660,7 +2667,7 @@ void WindowCombat::onSurrenderClicked() {
       }
     } else {
       _gameState.cash = 0;
-      for (int i = 0; i < DRUG_NUM; ++i) _gameState.player_qty[i] = 0;
+      _gameState.player_qty.fill(0);
       _gameState.pocket = 0;
       _textLog->append(
           "They accept your surrender but take everything! Hope you have money "

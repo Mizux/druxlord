@@ -30,7 +30,7 @@ void window_main_button_buy_clicked_cb(MainWindow& window) {
   }
 
   int drug_idx = item->data(COLUMN_NAME, Qt::UserRole).toInt();
-  if (drug_idx < 0 || drug_idx >= DRUG_NUM) return;
+  if (drug_idx < 0 || drug_idx >= static_cast<int>(drug_info.size())) return;
 
   int j = game_state.location;
   int d = game_state.day;
@@ -92,7 +92,7 @@ void window_main_button_sell_clicked_cb(MainWindow& window) {
   }
 
   int drug_idx = item->data(0, Qt::UserRole).toInt();
-  if (drug_idx < 0 || drug_idx >= DRUG_NUM) return;
+  if (drug_idx < 0 || drug_idx >= static_cast<int>(drug_info.size())) return;
   int owned_qty = game_state.player_qty[drug_idx];
   if (owned_qty <= 0) return;
 
@@ -142,7 +142,7 @@ void window_main_button_dump_clicked_cb(MainWindow& window) {
   }
 
   int drug_idx = item->data(0, Qt::UserRole).toInt();
-  if (drug_idx < 0 || drug_idx >= DRUG_NUM) return;
+  if (drug_idx < 0 || drug_idx >= static_cast<int>(drug_info.size())) return;
   int owned_qty = game_state.player_qty[drug_idx];
   if (owned_qty <= 0) return;
 
@@ -216,7 +216,7 @@ void menuitem_info_vaults_activate_cb(MainWindow& window) {
   const auto& game_state = window.gameState();
   std::string info = "Vault Contents:\n";
   bool empty = true;
-  for (int i = 0; i < DRUG_NUM; ++i) {
+  for (size_t i = 0; i < drug_info.size(); ++i) {
     if (game_state.vault_qty[i] > 0) {
       empty = false;
       info += std::format("  {}: {}\n", drug_name(drug_info[i].id),

@@ -4,11 +4,6 @@
 #include <string>
 #include <vector>
 
-inline constexpr int DRUG_NUM = 17;
-inline constexpr int CITY_NUM = 15;
-inline constexpr int WEAPON_NUM = 9;
-inline constexpr int COUNTRY_NUM = 7;
-inline constexpr int RANK_NUM = 6;
 inline constexpr int DAY_NUM = 30;
 
 enum class DrugType {
@@ -131,8 +126,6 @@ struct ShopItem {
   int ammo_price;
 };
 
-inline constexpr int SHOP_ITEM_NUM = 12;
-
 struct Enemy {
   std::string name;
   int weight;
@@ -145,8 +138,6 @@ struct Enemy {
   int surrender_accept;
   int accuracy;
 };
-
-inline constexpr int ENEMY_NUM = 10;
 
 enum class EncounterType {
   None,
@@ -179,19 +170,95 @@ struct Rank {
   int capacity;
 };
 
-inline constexpr std::array<int, RANK_NUM> rank_capacity = {10,  25,   100,
-                                                            600, 3500, 20000};
+inline constexpr std::array rank_capacity = {10, 25, 100, 600, 3500, 20000};
+
+inline constexpr std::array drug_info = {
+    Drug{DrugType::Cocaine, 5100},  Drug{DrugType::Crack, 7000},
+    Drug{DrugType::Ecstasy, 3000},  Drug{DrugType::Hashish, 1600},
+    Drug{DrugType::Heroin, 7000},   Drug{DrugType::Ice, 3000},
+    Drug{DrugType::Kat, 800},       Drug{DrugType::LSD, 1000},
+    Drug{DrugType::MDA, 1000},      Drug{DrugType::Morphine, 2000},
+    Drug{DrugType::Mushrooms, 400}, Drug{DrugType::Opium, 1500},
+    Drug{DrugType::PCP, 800},       Drug{DrugType::Peyote, 1000},
+    Drug{DrugType::Pot, 800},       Drug{DrugType::SpecialK, 1500},
+    Drug{DrugType::Speed, 800},
+};
+
+inline constexpr std::array weapon_info = {
+    Weapon{WeaponType::Knife, AmmoType::None, 20, false, false, 100},
+    Weapon{WeaponType::Pistol, AmmoType::PistolBullet, 40, false, true, 500},
+    Weapon{WeaponType::Shotgun, AmmoType::ShotgunShell, 50, false, true, 2500},
+    Weapon{WeaponType::MachineGun, AmmoType::MachineGunBullet, 60, true, true,
+           4000},
+    Weapon{WeaponType::Flamethrower, AmmoType::GasCanister, 70, true, true,
+           7500},
+    Weapon{WeaponType::Dynamite, AmmoType::None, 35, true, false, 250},
+    Weapon{WeaponType::Grenade, AmmoType::None, 50, true, false, 500},
+    Weapon{WeaponType::RocketLauncher, AmmoType::Rocket, 70, true, true, 10000},
+    Weapon{WeaponType::AreaDisrupter, AmmoType::EnergyGlobe, 99, true, true,
+           500000},
+};
+
+inline const std::array shop_items = {
+    ShopItem{"knife", "knives", "", "", 35, 1, 0, 1, 0, 100, 0},
+    ShopItem{"pistol", "pistols", "pistol bullet", "pistol bullets", 45, 1, 0,
+             1, 100, 500, 5},
+    ShopItem{"shot gun", "shot guns", "shot gun shell", "shot gun shells", 55,
+             2, 0, 1, 100, 2500, 5},
+    ShopItem{"machine gun", "machine guns", "machine gun bullet",
+             "machine gun bullets", 85, 1, 0, 1, 250, 4000, 5},
+    ShopItem{"flame thrower", "flame throwers", "gas canister", "gas canisters",
+             75, 8, 0, 1, 10, 7500, 200},
+    ShopItem{"", "", "dynamite", "sticks of dynamite", 90, 10, 0, 0, 10, 0,
+             250},
+    ShopItem{"", "", "hand grenade", "hand grenades", 95, 18, 0, 0, 10, 0, 500},
+    ShopItem{"rocket launcher", "rocket launchers", "rocket", "rockets", 80, 35,
+             0, 1, 5, 10000, 500},
+    ShopItem{"area disrupter", "area disrupters", "energy globe",
+             "energy globes", 95, 120, 0, 1, 10, 500000, 25000},
+    ShopItem{"heavy leather coat", "heavy leather coats", "", "", 0, 0, 3, 1, 0,
+             1000, 0},
+    ShopItem{"bullet proof vest", "bullet proof vests", "", "", 0, 0, 15, 1, 0,
+             10000, 0},
+    ShopItem{"can of no-scent", "cans of no-scent", "", "", 0, 0, 0, 10, 0,
+             1000, 0},
+};
+
+inline const std::array enemy_info = {
+    Enemy{"the drug force", 15, true, 2, 2, 20, 3, 25, 75, 50},
+    Enemy{"the police", 15, true, 5, 5, 10, 4, 20, 75, 25},
+    Enemy{"a youth gang", 15, false, 20, 25, 7, 3, 20, 20, 10},
+    Enemy{"some street toughs", 15, false, 20, 25, 7, 2, 40, 20, 20},
+    Enemy{"ATF", 3, true, 1, 5, 15, 3, 30, 75, 35},
+    Enemy{"a group of concerned citizens", 7, true, 10, 40, 5, 5, 10, 35, 5},
+    Enemy{"a group of wild dogs", 5, true, 0, 60, 5, 5, 15, 0, 0},
+    Enemy{"a pack of sewer rats", 3, true, 0, 80, 5, 10, 5, 0, 0},
+    Enemy{"the swat team", 2, true, 1, 2, 25, 4, 25, 75, 45},
+    Enemy{"airport security", 0, true, 1, 2, 25, 20, 25, 75, 35},
+};
+
+inline constexpr std::array city_info = {
+    City{CityType::Austin, CountryType::USA, 100, 1861},
+    City{CityType::Beijing, CountryType::China, 190, 5307},
+    City{CityType::Boston, CountryType::USA, 120, 2509},
+    City{CityType::Detroit, CountryType::USA, 80, 1963},
+    City{CityType::London, CountryType::UK, 110, 4725},
+    City{CityType::LosAngeles, CountryType::USA, 110, 1072},
+    City{CityType::Miami, CountryType::USA, 90, 2802},
+    City{CityType::Moscow, CountryType::Russia, 160, 5113},
+    City{CityType::NewYork, CountryType::USA, 100, 2435},
+    City{CityType::Paris, CountryType::France, 90, 4937},
+    City{CityType::SanFrancisco, CountryType::USA, 80, 791},
+    City{CityType::StPetersburg, CountryType::Russia, 150, 4761},
+    City{CityType::Sydney, CountryType::Australia, 110, 7757},
+    City{CityType::Toronto, CountryType::Canada, 100, 2091},
+    City{CityType::Vancouver, CountryType::Canada, 100, 0},
+};
 
 std::string drug_name(DrugType type);
 std::string city_name(CityType type);
 std::string country_name(CountryType type);
 int flight_cost(int from_city, int to_city);
-
-extern const std::array<Drug, DRUG_NUM> drug_info;
-extern const std::array<Weapon, WEAPON_NUM> weapon_info;
-extern const std::array<ShopItem, SHOP_ITEM_NUM> shop_items;
-extern const std::array<Enemy, ENEMY_NUM> enemy_info;
-extern const std::array<City, CITY_NUM> city_info;
 
 class GameState {
  public:
@@ -220,27 +287,29 @@ class GameState {
 
   int total_drugs() const {
     int total = 0;
-    for (int i = 0; i < DRUG_NUM; ++i) total += player_qty[i];
+    for (size_t i = 0; i < player_qty.size(); ++i) total += player_qty[i];
     return total;
   }
 
   std::vector<std::string> rumors_heard;
 
   // Player pocket inventory
-  int player_qty[DRUG_NUM]{};
-  int player_price[DRUG_NUM]{};  // average cost basis
+  std::array<int, drug_info.size()> player_qty{};
+  std::array<int, drug_info.size()> player_price{};  // average cost basis
 
   // Player weapons, armor, items, and ammo
-  int weapon_qty[SHOP_ITEM_NUM]{};
-  int ammo_qty[SHOP_ITEM_NUM]{};
+  std::array<int, shop_items.size()> weapon_qty{};
+  std::array<int, shop_items.size()> ammo_qty{};
 
   // Vault inventory
-  int vault_qty[DRUG_NUM]{};
+  std::array<int, drug_info.size()> vault_qty{};
 
-  DrugState drug_table[DRUG_NUM][CITY_NUM][DAY_NUM]{};
-  int cash_history[DAY_NUM]{};
-  int debt_history[DAY_NUM]{};
-  int health_history[DAY_NUM]{};
+  std::array<std::array<std::array<DrugState, DAY_NUM>, city_info.size()>,
+             drug_info.size()>
+      drug_table{};
+  std::array<int, DAY_NUM> cash_history{};
+  std::array<int, DAY_NUM> debt_history{};
+  std::array<int, DAY_NUM> health_history{};
   int location = 0;
   int day = 0;
   int rank = 0;

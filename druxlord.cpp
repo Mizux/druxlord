@@ -102,92 +102,9 @@ std::string country_name(CountryType type) {
   return "Unknown";
 }
 
-const std::array<Drug, DRUG_NUM> drug_info = {{{DrugType::Cocaine, 5100},
-                                               {DrugType::Crack, 7000},
-                                               {DrugType::Ecstasy, 3000},
-                                               {DrugType::Hashish, 1600},
-                                               {DrugType::Heroin, 7000},
-                                               {DrugType::Ice, 3000},
-                                               {DrugType::Kat, 800},
-                                               {DrugType::LSD, 1000},
-                                               {DrugType::MDA, 1000},
-                                               {DrugType::Morphine, 2000},
-                                               {DrugType::Mushrooms, 400},
-                                               {DrugType::Opium, 1500},
-                                               {DrugType::PCP, 800},
-                                               {DrugType::Peyote, 1000},
-                                               {DrugType::Pot, 800},
-                                               {DrugType::SpecialK, 1500},
-                                               {DrugType::Speed, 800}}};
-
-const std::array<Weapon, WEAPON_NUM> weapon_info = {
-    {{WeaponType::Knife, AmmoType::None, 20, false, false, 100},
-     {WeaponType::Pistol, AmmoType::PistolBullet, 40, false, true, 500},
-     {WeaponType::Shotgun, AmmoType::ShotgunShell, 50, false, true, 2500},
-     {WeaponType::MachineGun, AmmoType::MachineGunBullet, 60, true, true, 4000},
-     {WeaponType::Flamethrower, AmmoType::GasCanister, 70, true, true, 7500},
-     {WeaponType::Dynamite, AmmoType::None, 35, true, false, 250},
-     {WeaponType::Grenade, AmmoType::None, 50, true, false, 500},
-     {WeaponType::RocketLauncher, AmmoType::Rocket, 70, true, true, 10000},
-     {WeaponType::AreaDisrupter, AmmoType::EnergyGlobe, 99, true, true,
-      500000}}};
-
-const std::array<ShopItem, SHOP_ITEM_NUM> shop_items = {{
-    {"knife", "knives", "", "", 35, 1, 0, 1, 0, 100, 0},
-    {"pistol", "pistols", "pistol bullet", "pistol bullets", 45, 1, 0, 1, 100,
-     500, 5},
-    {"shot gun", "shot guns", "shot gun shell", "shot gun shells", 55, 2, 0, 1,
-     100, 2500, 5},
-    {"machine gun", "machine guns", "machine gun bullet", "machine gun bullets",
-     85, 1, 0, 1, 250, 4000, 5},
-    {"flame thrower", "flame throwers", "gas canister", "gas canisters", 75, 8,
-     0, 1, 10, 7500, 200},
-    {"", "", "dynamite", "sticks of dynamite", 90, 10, 0, 0, 10, 0, 250},
-    {"", "", "hand grenade", "hand grenades", 95, 18, 0, 0, 10, 0, 500},
-    {"rocket launcher", "rocket launchers", "rocket", "rockets", 80, 35, 0, 1,
-     5, 10000, 500},
-    {"area disrupter", "area disrupters", "energy globe", "energy globes", 95,
-     120, 0, 1, 10, 500000, 25000},
-    {"heavy leather coat", "heavy leather coats", "", "", 0, 0, 3, 1, 0, 1000,
-     0},
-    {"bullet proof vest", "bullet proof vests", "", "", 0, 0, 15, 1, 0, 10000,
-     0},
-    {"can of no-scent", "cans of no-scent", "", "", 0, 0, 0, 10, 0, 1000, 0},
-}};
-
-const std::array<Enemy, ENEMY_NUM> enemy_info = {{
-    {"the drug force", 15, true, 2, 2, 20, 3, 25, 75, 50},
-    {"the police", 15, true, 5, 5, 10, 4, 20, 75, 25},
-    {"a youth gang", 15, false, 20, 25, 7, 3, 20, 20, 10},
-    {"some street toughs", 15, false, 20, 25, 7, 2, 40, 20, 20},
-    {"ATF", 3, true, 1, 5, 15, 3, 30, 75, 35},
-    {"a group of concerned citizens", 7, true, 10, 40, 5, 5, 10, 35, 5},
-    {"a group of wild dogs", 5, true, 0, 60, 5, 5, 15, 0, 0},
-    {"a pack of sewer rats", 3, true, 0, 80, 5, 10, 5, 0, 0},
-    {"the swat team", 2, true, 1, 2, 25, 4, 25, 75, 45},
-    {"airport security", 0, true, 1, 2, 25, 20, 25, 75, 35},
-}};
-
-const std::array<City, CITY_NUM> city_info = {
-    {{CityType::Austin, CountryType::USA, 100, 1861},
-     {CityType::Beijing, CountryType::China, 190, 5307},
-     {CityType::Boston, CountryType::USA, 120, 2509},
-     {CityType::Detroit, CountryType::USA, 80, 1963},
-     {CityType::London, CountryType::UK, 110, 4725},
-     {CityType::LosAngeles, CountryType::USA, 110, 1072},
-     {CityType::Miami, CountryType::USA, 90, 2802},
-     {CityType::Moscow, CountryType::Russia, 160, 5113},
-     {CityType::NewYork, CountryType::USA, 100, 2435},
-     {CityType::Paris, CountryType::France, 90, 4937},
-     {CityType::SanFrancisco, CountryType::USA, 80, 791},
-     {CityType::StPetersburg, CountryType::Russia, 150, 4761},
-     {CityType::Sydney, CountryType::Australia, 110, 7757},
-     {CityType::Toronto, CountryType::Canada, 100, 2091},
-     {CityType::Vancouver, CountryType::Canada, 100, 0}}};
-
 int flight_cost(int from_city, int to_city) {
-  if (from_city < 0 || from_city >= CITY_NUM || to_city < 0 ||
-      to_city >= CITY_NUM) {
+  if (from_city < 0 || from_city >= static_cast<int>(city_info.size()) ||
+      to_city < 0 || to_city >= static_cast<int>(city_info.size())) {
     return 0;
   }
   return std::abs(city_info[from_city].distance - city_info[to_city].distance);
@@ -219,27 +136,15 @@ void GameState::newgame() {
   debt = 1000;
   pocket = 0;
   pocket_capacity = 10;
-  for (int i = 0; i < DRUG_NUM; ++i) {
-    player_qty[i] = 0;
-    player_price[i] = 0;
-    vault_qty[i] = 0;
-  }
-  for (int i = 0; i < SHOP_ITEM_NUM; ++i) {
-    weapon_qty[i] = 0;
-    ammo_qty[i] = 0;
-  }
-  for (int i = 0; i < DRUG_NUM; ++i) {
-    for (int j = 0; j < CITY_NUM; ++j) {
-      for (int d = 0; d < DAY_NUM; ++d) {
-        drug_table[i][j][d] = DrugState{};
-      }
-    }
-  }
-  for (int d = 0; d < DAY_NUM; ++d) {
-    cash_history[d] = 0;
-    debt_history[d] = 0;
-    health_history[d] = 0;
-  }
+  player_qty.fill(0);
+  player_price.fill(0);
+  vault_qty.fill(0);
+  weapon_qty.fill(0);
+  ammo_qty.fill(0);
+  drug_table = {};
+  cash_history.fill(0);
+  debt_history.fill(0);
+  health_history.fill(0);
   rumors_heard.clear();
   generate_drug();
   record_daily_history();
@@ -273,16 +178,16 @@ Encounter GameState::check_random_encounter() {
   // Combat encounters: Events 12, 13, 14
   if (ev >= 12) {
     int total_enemy_weight = 0;
-    for (int i = 0; i < ENEMY_NUM - 1; ++i) {
+    for (size_t i = 0; i < enemy_info.size() - 1; ++i) {
       total_enemy_weight += enemy_info[i].weight;
     }
     int eroll = static_cast<int>(gen() % total_enemy_weight);
     int e_idx = 0;
     accum = 0;
-    for (int i = 0; i < ENEMY_NUM - 1; ++i) {
+    for (size_t i = 0; i < enemy_info.size() - 1; ++i) {
       accum += enemy_info[i].weight;
       if (eroll < accum) {
-        e_idx = i;
+        e_idx = static_cast<int>(i);
         break;
       }
     }
@@ -304,7 +209,7 @@ Encounter GameState::check_random_encounter() {
   }
 
   if (ev == 0) {
-    int d = static_cast<int>(gen() % DRUG_NUM);
+    int d = static_cast<int>(gen() % drug_info.size());
     int q = 1 + static_cast<int>(gen() % 5);
     q = std::min(q, pocket_capacity - pocket);
     if (q > 0) {
@@ -321,8 +226,8 @@ Encounter GameState::check_random_encounter() {
 
   if (ev == 1) {
     std::vector<int> owned;
-    for (int i = 0; i < DRUG_NUM; ++i) {
-      if (player_qty[i] > 0) owned.push_back(i);
+    for (size_t i = 0; i < drug_info.size(); ++i) {
+      if (player_qty[i] > 0) owned.push_back(static_cast<int>(i));
     }
     if (owned.empty()) return {EncounterType::None};
     int d = owned[gen() % owned.size()];
@@ -337,8 +242,8 @@ Encounter GameState::check_random_encounter() {
 
   if (ev == 2) {
     std::vector<int> owned;
-    for (int i = 0; i < DRUG_NUM; ++i) {
-      if (player_qty[i] > 0) owned.push_back(i);
+    for (size_t i = 0; i < drug_info.size(); ++i) {
+      if (player_qty[i] > 0) owned.push_back(static_cast<int>(i));
     }
     if (owned.empty()) return {EncounterType::None};
     int d = owned[gen() % owned.size()];
@@ -352,7 +257,7 @@ Encounter GameState::check_random_encounter() {
   }
 
   if (ev == 3) {
-    int d = static_cast<int>(gen() % DRUG_NUM);
+    int d = static_cast<int>(gen() % drug_info.size());
     int q = 1 + static_cast<int>(gen() % 5);
     q = std::min(q, pocket_capacity - pocket);
     if (q > 0) {
@@ -418,8 +323,8 @@ Encounter GameState::check_random_encounter() {
 
   if (ev == 9) {
     std::vector<int> owned;
-    for (int i = 0; i < DRUG_NUM; ++i) {
-      if (player_qty[i] > 0) owned.push_back(i);
+    for (size_t i = 0; i < drug_info.size(); ++i) {
+      if (player_qty[i] > 0) owned.push_back(static_cast<int>(i));
     }
     if (owned.empty()) return {EncounterType::None};
     int d = owned[gen() % owned.size()];
@@ -477,11 +382,13 @@ void GameState::generate_drug_day(int d) {
   static std::random_device rd;
   static std::mt19937 gen(rd());
 
-  int cap = (rank >= 0 && rank < RANK_NUM) ? rank_capacity[rank] : 10;
+  int cap = (rank >= 0 && rank < static_cast<int>(rank_capacity.size()))
+                ? rank_capacity[rank]
+                : 10;
 
-  for (int j = 0; j < CITY_NUM; ++j) {
+  for (size_t j = 0; j < city_info.size(); ++j) {
     int city_factor = city_info[j].price_factor;
-    for (int i = 0; i < DRUG_NUM; ++i) {
+    for (size_t i = 0; i < drug_info.size(); ++i) {
       int base_price = drug_info[i].price;
       int mean = (base_price * city_factor) / 100;
       int half = mean / 2;
@@ -610,7 +517,7 @@ void GameState::generate_rumors() {
 
   // Local rumor (1 in 3 chance)
   if (gen() % 3 == 0) {
-    int drug_idx = static_cast<int>(gen() % DRUG_NUM);
+    int drug_idx = static_cast<int>(gen() % drug_info.size());
     int r = static_cast<int>(gen() % 10);
     int r_flag = (r <= 6) ? 1 : -1;
     int base_event = (r <= 6) ? 1 : (r == 9 ? -1 : 0);
@@ -634,10 +541,10 @@ void GameState::generate_rumors() {
 
   // Remote rumor (1 in 3 chance)
   if (gen() % 3 == 0) {
-    int other_city = static_cast<int>(gen() % (CITY_NUM - 1));
+    int other_city = static_cast<int>(gen() % (city_info.size() - 1));
     if (other_city >= location) other_city++;
 
-    int drug_idx = static_cast<int>(gen() % DRUG_NUM);
+    int drug_idx = static_cast<int>(gen() % drug_info.size());
     int r = static_cast<int>(gen() % 10);
     int r_flag = (r <= 6) ? 1 : -1;
     int base_event = (r <= 6) ? 1 : (r == 9 ? -1 : 0);
@@ -703,7 +610,7 @@ std::string GameState::get_market_news(int loc, int d) const {
   std::string news;
 
   // 1. Rumor resolutions for current location on day d
-  for (int i = 0; i < DRUG_NUM; ++i) {
+  for (size_t i = 0; i < drug_info.size(); ++i) {
     int r_flag = drug_table[i][loc][d].rumor_flag;
     if (r_flag != 0) {
       if (!news.empty()) news += "\n\n";
@@ -761,7 +668,7 @@ std::string GameState::get_market_news(int loc, int d) const {
       "Prices plummet!", "Prices nose dive!",
       "Prices are lower than the Marianas Trench!"};
 
-  for (int i = 0; i < DRUG_NUM; ++i) {
+  for (size_t i = 0; i < drug_info.size(); ++i) {
     int e_flag = drug_table[i][loc][d].event_flag;
     if (e_flag == 1) {
       if (!news.empty()) news += "\n\n";
