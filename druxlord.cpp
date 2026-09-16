@@ -235,8 +235,14 @@ void GameState::newgame() {
       }
     }
   }
+  for (int d = 0; d < DAY_NUM; ++d) {
+    cash_history[d] = 0;
+    debt_history[d] = 0;
+    health_history[d] = 0;
+  }
   rumors_heard.clear();
   generate_drug();
+  record_daily_history();
 }
 
 Encounter GameState::check_random_encounter() {
@@ -656,7 +662,16 @@ void GameState::generate_rumors() {
   }
 }
 
+void GameState::record_daily_history() {
+  if (day >= 0 && day < DAY_NUM) {
+    cash_history[day] = cash;
+    debt_history[day] = debt;
+    health_history[day] = health;
+  }
+}
+
 void GameState::stay_here() {
+  record_daily_history();
   if (day < DAY_NUM - 1) {
     day += 1;
     if (debt > 0) {
@@ -680,6 +695,7 @@ void GameState::stay_here() {
     pocket_capacity = rank_capacity[rank];
     generate_drug_day(day);
     generate_rumors();
+    record_daily_history();
   }
 }
 

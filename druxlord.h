@@ -105,6 +105,7 @@ struct DrugState {
   int event_flag = 0;
   int rumor_flag = 0;
   bool available = false;
+  bool traded = false;
 };
 
 struct Weapon {
@@ -201,6 +202,7 @@ class GameState {
   void generate_drug();
   void generate_drug_day(int d);
   void generate_rumors();
+  void record_daily_history();
   std::string get_market_news(int loc, int d) const;
   int flight_cost(int to_city) const;
 
@@ -236,6 +238,9 @@ class GameState {
   int vault_qty[DRUG_NUM]{};
 
   DrugState drug_table[DRUG_NUM][CITY_NUM][DAY_NUM]{};
+  int cash_history[DAY_NUM]{};
+  int debt_history[DAY_NUM]{};
+  int health_history[DAY_NUM]{};
   int location = 0;
   int day = 0;
   int rank = 0;
