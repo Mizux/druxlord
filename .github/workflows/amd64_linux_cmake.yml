@@ -24,7 +24,7 @@ jobs:
       - name: Install Qt6
         run: |
           sudo apt update -q
-          sudo apt install -yq qt6-base-dev libgl-dev
+          sudo apt install -yq qt6-base-dev qt6-charts-dev libgl-dev
       - name: Install doxygen
         run: |
           sudo apt update -q
