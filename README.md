@@ -15,7 +15,7 @@ Github-CI:<br>
 
 # Drux Lord
 
-A Linux clone of the classic game [Drug Lord 2](http://www.geekhideout.com/druglord2.shtml) built with modern C++20 and Qt 6 (or Qt 5).
+A Linux clone of the classic game [Drug Lord 2](http://www.geekhideout.com/druglord2.shtml) built with modern C++20 and Qt6.
 
 ## Description
 
