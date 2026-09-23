@@ -27,7 +27,8 @@ To build Drux Lord, ensure you have the following installed on your system:
 
 - **C++ Compiler** supporting C++20 (GCC 11+, Clang 13+, or MSVC)
 - **CMake** (version 3.24 or higher)
-- **Qt 6 or Qt 5** development libraries (`qt6-base-dev` or `qtbase5-dev` on Debian/Ubuntu)
+- **Qt 6** development libraries (`qt6-base-dev` on Debian/Ubuntu)
+- **ncurses** development libraries (`libncurses-dev` on Debian/Ubuntu)
 
 On Debian/Ubuntu-based distributions:
 ```bash
