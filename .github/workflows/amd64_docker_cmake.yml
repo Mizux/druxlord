@@ -18,8 +18,8 @@ jobs:
           archlinux,
           debian,
           fedora,
-          opensuse,
-          rockylinux,
+          #opensuse, # qt6 conflicts with gawk
+          #rockylinux, # qt6 is not yet available
           ubuntu
         ]
       fail-fast: false
