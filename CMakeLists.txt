@@ -79,3 +79,4 @@ include(CTest)
 
 add_subdirectory(libdruxlord)
 add_subdirectory(app)
+add_subdirectory(tui)
