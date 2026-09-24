@@ -1,5 +1,6 @@
 add_library(libdruxlord SHARED)
 target_sources(libdruxlord PRIVATE
+  config.h
   druxlord.cpp
   druxlord.h
 )
@@ -17,7 +18,7 @@ set_target_properties(libdruxlord PROPERTIES
   SOVERSION ${PROJECT_VERSION_MAJOR}
   POSITION_INDEPENDENT_CODE ON
   WINDOWS_EXPORT_ALL_SYMBOLS ON
-  PUBLIC_HEADER druxlord.h
+  PUBLIC_HEADER "config.h;druxlord.h"
 )
 if(APPLE)
   set_target_properties(libdruxlord PROPERTIES

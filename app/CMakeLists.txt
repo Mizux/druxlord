@@ -10,7 +10,6 @@ set(QT_VERSION_MAJOR 6)
 # Executable
 add_executable(druxlord)
 target_sources(druxlord PRIVATE
-  config.h
   main.cpp
   window-cb.cpp
   window-cb.h
